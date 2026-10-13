@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="day">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>面试舱 · 默写与批改</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================
+   面试舱 · 视觉主张「默写纸与红笔」
+   纸 / 格 / 墨 三色近乎无色，唯一强调色留给批改红。
+   圆角归零：稿纸与格子都是方的。
+   ========================================================== */
+:root{
+  --paper:#ECEEE8;      /* 页面底（冷灰绿，非奶油黄） */
+  --sheet:#F4F5F0;      /* 纸面 */
+  --rule:#C6CDBB;       /* 格线 */
+  --rule-2:#DFE3D7;     /* 弱格线 */
+  --ink:#1B1F1A;        /* 墨 */
+  --ink-2:#3C4239;
+  --pencil:#5E6459;     /* 铅笔：次要说明 */
+  --pencil-2:#8B9184;
+
+  --red:#C23B2A;        /* 批改红 —— 全场唯一强调色 */
+  --red-ink:#A8301F;    /* 红字专用 */
+  --red-wash:#F3E2DE;
+
+  --blue:#2E4A66;       /* 印蓝：出处与检索 */
+  --blue-wash:#E4E9EE;
+
+  --ease:cubic-bezier(.22,1,.36,1);
+  --t-fast:120ms; --t-base:220ms;
+
+  --topbar-h:56px; --rail-w:264px; --panel-w:400px; --stage-max:800px;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:20px; --s6:24px; --s8:32px;
+
+  --c-prep:#7A7136;  --b-prep:#EDEBDD;
+  --c-redis:#9B4A3C; --b-redis:#F1E4E0;
+  --c-db:#3F6A80;    --b-db:#E1E9ED;
+  --c-spring:#4A7050;--b-spring:#E3EBE3;
+  --c-micro:#5D5A85; --b-micro:#E7E5EE;
+  --c-mq:#8A5265;    --b-mq:#F0E3E8;
+  --c-coll:#3E7068;  --b-coll:#E0EAE8;
+  --c-conc:#8A6134;  --b-conc:#EFE7DB;
+  --c-jvm:#4E5A8C;   --b-jvm:#E5E7F0;
+  --c-biz:#5F6659;   --b-biz:#E7E9E2;
+
+  --serif:'Noto Serif SC','Songti SC','Source Han Serif SC','SimSun','STSong',serif;
+  --sans:'Noto Sans SC','PingFang SC','Microsoft YaHei','Hiragino Sans GB',sans-serif;
+  --mono:'JetBrains Mono','SFMono-Regular','Cascadia Mono',Consolas,monospace;
+}
+[data-theme="night"]{
+  --paper:#111410; --sheet:#181C16; --rule:#333A2C; --rule-2:#252B20;
+  --ink:#E7E9DF; --ink-2:#C3C8BA; --pencil:#98A08E; --pencil-2:#6E7664;
+  --red:#E0705C; --red-ink:#EE8F7C; --red-wash:#2E1C18;
+  --blue:#8FB2D0; --blue-wash:#1C2531;
+  --b-prep:#252318; --b-redis:#2A1E1B; --b-db:#182229; --b-spring:#1B241C;
+  --b-micro:#201F29; --b-mq:#261C21; --b-coll:#18251F; --b-conc:#271F16;
+  --b-jvm:#1D2030; --b-biz:#20231C;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+pre{margin:0;font-family:inherit}
+html,body{height:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+  font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow:hidden}
+button,input,textarea{font:inherit;color:inherit}
+button{background:none;border:none;cursor:pointer;padding:0}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+::selection{background:var(--red-wash);color:var(--red-ink)}
+h1,h2,h3,h4{margin:0;font-weight:600}
+p{margin:0} ul,ol{margin:0;padding:0}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+[hidden]{display:none!important}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:var(--rule);border:3px solid transparent;background-clip:content-box}
+
+/* ========================================================== 顶栏 */
+.app{height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+.topbar{
+  height:var(--topbar-h);flex:0 0 var(--topbar-h);display:flex;align-items:center;gap:var(--s4);
+  padding:0 var(--s4) 0 var(--s3);background:var(--paper);border-bottom:1px solid var(--ink);
+  position:relative;z-index:40;
+}
+.seal{width:32px;height:32px;background:var(--red);color:#fff;display:grid;place-items:center;
+  font-family:var(--serif);font-weight:700;font-size:18px;flex:0 0 auto}
+.brand{display:flex;align-items:baseline;gap:9px;flex:0 0 auto;padding-right:var(--s3)}
+.brand__name{font-family:var(--serif);font-weight:700;font-size:16px;letter-spacing:.06em}
+.brand__sub{font-family:var(--mono);font-size:10px;color:var(--pencil-2)}
+.board{flex:1 1 auto;display:flex;align-items:center;gap:var(--s4);min-width:0}
+.board__strip{display:flex;align-items:center;gap:1px;overflow-x:auto;scrollbar-width:none;padding:4px 2px}
+.board__strip::-webkit-scrollbar{display:none}
+.mod{display:flex;align-items:center;gap:6px;padding:5px 8px;transition:background var(--t-fast);cursor:default}
+.mod:hover{background:var(--sheet)}
+.mod__label{font-size:11.5px;color:var(--pencil);white-space:nowrap}
+.mod__bar{width:26px;height:3px;background:var(--rule);position:relative;flex:0 0 auto}
+.mod__bar i{position:absolute;left:0;top:0;bottom:0;background:var(--ink-2);display:block;transition:width var(--t-base) var(--ease)}
+.mod[data-weak="1"] .mod__label{color:var(--red-ink)}
+.mod__lvl{font-family:var(--mono);font-size:9.5px;color:var(--pencil-2);min-width:16px}
+.mastery{display:flex;align-items:center;gap:8px;flex:0 0 auto;padding:4px 8px;cursor:pointer}
+.mastery:hover{background:var(--sheet)}
+.mastery__ring{width:30px;height:30px;flex:0 0 auto;position:relative}
+.mastery__ring svg{display:block}
+.mastery__val{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--mono);font-weight:500;font-size:9.5px}
+.mastery__txt{display:flex;flex-direction:column;line-height:1.25}
+.mastery__t1{font-size:11.5px}
+.mastery__t2{font-family:var(--mono);font-size:9.5px;color:var(--pencil-2)}
+.vsep{width:1px;height:22px;background:var(--rule);flex:0 0 auto}
+.topbar__actions{display:flex;align-items:center;gap:var(--s1);flex:0 0 auto;margin-left:auto}
+.engine{height:28px;padding:0 10px;display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--pencil);
+  border:1px solid var(--rule);white-space:nowrap;background:var(--sheet)}
+.engine:hover{border-color:var(--pencil-2);color:var(--ink)}
+.engine__dot{width:6px;height:6px;background:var(--pencil);flex:0 0 auto}
+.engine[data-mode="cloud"] .engine__dot{background:var(--blue)}
+.engine b{font-weight:500;color:var(--ink)}
+.icon-btn{height:30px;min-width:30px;padding:0 8px;display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  color:var(--pencil);font-size:12px;transition:background var(--t-fast),color var(--t-fast)}
+.icon-btn:hover{background:var(--sheet);color:var(--ink)}
+.icon-btn[aria-expanded="true"]{background:var(--ink);color:var(--sheet)}
+.icon-btn__badge{min-width:16px;height:16px;padding:0 4px;background:var(--red);color:#fff;font-family:var(--mono);
+  font-size:9.5px;font-weight:500;display:grid;place-items:center}
+.avatar{width:30px;height:30px;background:var(--sheet);border:1px solid var(--rule);color:var(--ink);
+  display:grid;place-items:center;font-family:var(--serif);font-size:13px;flex:0 0 auto}
+
+/* ========================================================== 浮层 */
+.scrim{position:fixed;inset:0;background:rgba(20,24,18,.34);opacity:0;pointer-events:none;transition:opacity var(--t-base);z-index:60}
+.scrim[data-open="1"]{opacity:1;pointer-events:auto}
+.pop{position:absolute;top:calc(var(--topbar-h) - 4px);right:var(--s4);width:340px;background:var(--sheet);
+  border:1px solid var(--ink);z-index:70;opacity:0;transform:translateY(-4px);pointer-events:none;
+  transition:opacity var(--t-base),transform var(--t-base)}
+.pop[data-open="1"]{opacity:1;transform:none;pointer-events:auto}
+.pop--wide{width:452px;right:auto;left:50%;transform:translate(-50%,-4px)}
+.pop--wide[data-open="1"]{transform:translate(-50%,0)}
+.pop--eng{width:400px}
+.pop__hd{display:flex;align-items:baseline;gap:var(--s2);padding:11px var(--s4);border-bottom:1px solid var(--rule);
+  font-family:var(--serif);font-size:13px;font-weight:600}
+.pop__hd .sub{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--pencil-2);font-weight:400}
+.pop__bd{padding:var(--s2) var(--s3)}
+.field{display:flex;align-items:center;gap:var(--s3);padding:9px var(--s2);border-bottom:1px solid var(--rule-2)}
+.field:last-child{border-bottom:none}
+.field:hover{background:var(--paper)}
+.field__k{flex:0 0 92px;font-size:12.5px;color:var(--ink-2)}
+.field__c{flex:1;display:flex;justify-content:flex-end;align-items:center;gap:var(--s2)}
+.seg{display:inline-flex;border:1px solid var(--rule);background:var(--paper)}
+.seg button{height:26px;padding:0 10px;font-size:12px;color:var(--pencil);border-right:1px solid var(--rule);transition:all var(--t-fast)}
+.seg button:last-child{border-right:none}
+.seg button:hover{color:var(--ink);background:var(--sheet)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--sheet)}
+.switch{width:34px;height:20px;background:var(--rule);position:relative;transition:background var(--t-base);flex:0 0 auto;border:1px solid var(--rule)}
+.switch::after{content:"";position:absolute;top:1px;left:1px;width:16px;height:16px;background:var(--sheet);transition:transform var(--t-base) var(--ease)}
+.switch[aria-checked="true"]{background:var(--ink);border-color:var(--ink)}
+.switch[aria-checked="true"]::after{transform:translateX(14px)}
+.boardpop__grid{display:grid;grid-template-columns:1fr 1fr;gap:0 1px;background:var(--rule-2)}
+.bp{display:flex;flex-direction:column;gap:5px;padding:10px var(--s4);background:var(--sheet)}
+.bp__r{display:flex;align-items:baseline;gap:var(--s2)}
+.bp__n{font-size:12.5px;flex:1}
+.bp__v{font-family:var(--mono);font-size:11px;color:var(--pencil)}
+.bp__track{height:2px;background:var(--rule-2)}
+.bp__track i{display:block;height:100%;background:var(--ink-2)}
+.engrow{display:flex;gap:var(--s3);padding:var(--s3) var(--s2);align-items:flex-start;border-bottom:1px solid var(--rule-2)}
+.engrow:last-child{border-bottom:none}
+.engrow__ico{width:24px;height:24px;display:grid;place-items:center;flex:0 0 auto;border:1px solid var(--rule);color:var(--pencil)}
+.engrow[data-on="1"] .engrow__ico{border-color:var(--ink);color:var(--ink)}
+.engrow__bd{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.engrow__t{font-size:12.5px;font-weight:500;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.engrow__t em{font-style:normal;font-family:var(--mono);font-size:10px;color:var(--pencil-2)}
+.engrow__d{font-size:11.5px;color:var(--pencil);line-height:1.65}
+
+/* ========================================================== 三栏 */
+.workspace{flex:1 1 auto;display:flex;min-height:0;position:relative}
+.rail{width:var(--rail-w);flex:0 0 var(--rail-w);background:var(--paper);border-right:1px solid var(--rule);display:flex;flex-direction:column;min-height:0}
+.panel{width:var(--panel-w);flex:0 0 var(--panel-w);background:var(--sheet);border-left:1px solid var(--ink);display:flex;flex-direction:column;min-height:0}
+.stage{flex:1 1 auto;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--sheet)}
+
+/* ========================================================== 按钮 */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:34px;padding:0 14px;
+  font-size:13px;border:1px solid var(--ink);background:var(--sheet);color:var(--ink);
+  transition:background var(--t-fast),color var(--t-fast);white-space:nowrap}
+.btn:hover{background:var(--ink);color:var(--sheet)}
+.btn--red{background:var(--red);border-color:var(--red);color:#fff}
+.btn--red:hover{background:var(--red-ink);border-color:var(--red-ink);color:#fff}
+.btn--ink{background:var(--ink);border-color:var(--ink);color:var(--sheet)}
+.btn--ink:hover{background:#000;border-color:#000}
+.btn--quiet{border-color:transparent;background:transparent;color:var(--pencil);height:28px;padding:0 8px;font-size:12px}
+.btn--quiet:hover{background:var(--paper);color:var(--ink)}
+.btn--block{width:100%}
+.btn--sm{height:28px;padding:0 10px;font-size:12px}
+.btn:disabled{opacity:.4;pointer-events:none}
+
+/* ========================================================== 左栏：目录 */
+.rail__head{padding:var(--s3) var(--s3) var(--s2);display:flex;flex-direction:column;gap:var(--s3)}
+.rail__cap{font-family:var(--serif);font-size:13px;font-weight:600;display:flex;align-items:center;gap:var(--s2)}
+.rail__cap::after{content:"";flex:1;height:1px;background:var(--rule)}
+.lib{border:1px solid var(--rule);background:var(--sheet)}
+.lib[data-open="1"]{border-color:var(--ink)}
+.lib__btn{width:100%;display:flex;align-items:center;gap:var(--s3);padding:10px var(--s3);text-align:left}
+.lib__btn:hover{background:var(--paper)}
+.lib__ico{width:32px;height:32px;flex:0 0 auto;display:grid;place-items:center;border:1px solid var(--red);
+  color:var(--red-ink);font-family:var(--serif);font-size:11px;font-weight:600;line-height:1.05;text-align:center}
+.lib__meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.lib__src{font-family:var(--mono);font-size:10px;color:var(--pencil-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lib__name{font-family:var(--serif);font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lib__chev{color:var(--pencil-2);transition:transform var(--t-base) var(--ease);flex:0 0 auto}
+.lib[data-open="1"] .lib__chev{transform:rotate(180deg)}
+.lib__body{display:none;border-top:1px solid var(--rule)}
+.lib[data-open="1"] .lib__body{display:block}
+.lib__row{display:flex;align-items:baseline;gap:var(--s3);padding:7px var(--s3);font-size:11px;color:var(--pencil);border-bottom:1px solid var(--rule-2)}
+.lib__row:last-child{border-bottom:none}
+.lib__row .nm{flex:1;min-width:0;font-family:var(--mono);font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2)}
+.lib__row .sz{font-family:var(--mono);font-size:10.5px;flex:0 0 auto}
+.rail__scroll{flex:1 1 auto;overflow-y:auto;min-height:0}
+.scope__hd{display:flex;align-items:baseline;gap:var(--s2);padding:var(--s3) var(--s4) var(--s2)}
+.scope__hd .t{font-family:var(--serif);font-size:12.5px;font-weight:600}
+.scope__hd .a{margin-left:auto;font-size:11px;color:var(--blue);text-decoration:underline;text-underline-offset:2px}
+.chap{width:100%;display:flex;align-items:center;gap:9px;padding:9px var(--s4);text-align:left;
+  border-bottom:1px solid var(--rule-2);transition:background var(--t-fast)}
+.chap:hover{background:var(--sheet)}
+.chk{width:13px;height:13px;border:1px solid var(--pencil-2);flex:0 0 auto;display:grid;place-items:center;background:var(--sheet)}
+.chk svg{opacity:0;transition:opacity var(--t-fast)}
+.chk[data-on="1"]{background:var(--ink);border-color:var(--ink)}
+.chk[data-on="1"] svg{opacity:1}
+.chap__dot{width:5px;height:5px;flex:0 0 auto}
+.chap__nm{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.chap__t1{font-family:var(--serif);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chap__t2{display:flex;align-items:center;gap:var(--s2);font-family:var(--mono);font-size:10px;color:var(--pencil-2)}
+.chap__prog{width:40px;height:2px;background:var(--rule-2);flex:0 0 auto}
+.chap__prog i{display:block;height:100%;background:var(--ink-2)}
+.chap__pct{font-family:var(--mono);font-size:10.5px;color:var(--pencil-2);width:30px;text-align:right;flex:0 0 auto}
+.chap__due{font-family:var(--mono);font-size:9.5px;color:var(--red-ink);border:1px solid var(--red);padding:0 4px;flex:0 0 auto}
+.rail__foot{border-top:1px solid var(--rule);display:flex}
+.rail__foot .btn{flex:1;border:none;border-right:1px solid var(--rule)}
+.rail__foot .btn:last-child{border-right:none}
+
+/* ========================================================== 中栏 */
+.stage__head{flex:0 0 auto;height:52px;display:flex;align-items:center;gap:var(--s3);padding:0 var(--s6);
+  border-bottom:1px solid var(--rule);background:var(--sheet)}
+.tag{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 7px;font-size:11.5px;
+  border:1px solid var(--rule);background:var(--sheet);color:var(--ink-2);white-space:nowrap}
+.tag__dot{width:5px;height:5px;flex:0 0 auto;background:currentColor}
+.tag--muted{border-color:transparent;color:var(--pencil-2);padding-left:0}
+.t--prep{background:var(--b-prep);color:var(--c-prep)}   .t--redis{background:var(--b-redis);color:var(--c-redis)}
+.t--db{background:var(--b-db);color:var(--c-db)}         .t--spring{background:var(--b-spring);color:var(--c-spring)}
+.t--micro{background:var(--b-micro);color:var(--c-micro)} .t--mq{background:var(--b-mq);color:var(--c-mq)}
+.t--coll{background:var(--b-coll);color:var(--c-coll)}   .t--conc{background:var(--b-conc);color:var(--c-conc)}
+.t--jvm{background:var(--b-jvm);color:var(--c-jvm)}      .t--biz{background:var(--b-biz);color:var(--c-biz)}
+.timechip{margin-left:auto;display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12px;
+  color:var(--pencil);flex:0 0 auto;white-space:nowrap}
+.head-actions{display:flex;gap:var(--s2);flex:0 0 auto}
+.stream{flex:1 1 auto;overflow-y:auto;padding:var(--s8) 0 var(--s6);min-height:0;scroll-behavior:smooth}
+.stream__inner{max-width:var(--stage-max);margin:0 auto;padding:0 var(--s6);display:flex;flex-direction:column;gap:var(--s8)}
+.divider{display:flex;align-items:center;gap:var(--s3);font-family:var(--mono);font-size:10.5px;color:var(--pencil-2)}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--rule-2)}
+.qcard{border:1px solid var(--rule);border-left:2px solid var(--ink);background:var(--sheet);padding:var(--s5) var(--s5) var(--s6)}
+.qcard__label{font-family:var(--mono);font-size:10.5px;color:var(--pencil-2);margin-bottom:var(--s3);display:flex;align-items:center;gap:var(--s2)}
+.qcard__label::after{content:"";flex:1;height:1px;background:var(--rule-2)}
+.qcard__q{font-family:var(--serif);font-size:19px;line-height:1.75;font-weight:600;letter-spacing:.01em}
+.msg__meta{display:flex;align-items:center;gap:var(--s3);font-family:var(--mono);font-size:10.5px;color:var(--pencil-2);flex-wrap:wrap;margin-bottom:var(--s2)}
+.msg{display:flex;flex-direction:column;gap:var(--s2)}
+.mine{font-family:var(--serif);font-size:14.5px;line-height:27px;color:var(--ink);
+  background-image:repeating-linear-gradient(to bottom,transparent 0 26px,var(--rule-2) 26px 27px);
+  background-attachment:local;padding:0 var(--s4) 0 34px;position:relative;white-space:pre-wrap;word-break:break-word;
+  border-left:1px solid var(--red-wash)}
+.md{font-family:var(--serif);font-size:14px;line-height:1.8;color:var(--ink-2)}
+.md>*+*{margin-top:var(--s3)}
+.md h4{font-family:var(--serif);font-size:15px;color:var(--ink)}
+.md strong{color:var(--ink);font-weight:600}
+.md ul{padding-left:1.2em;display:flex;flex-direction:column;gap:4px}
+.md li::marker{color:var(--pencil-2)}
+.md code{font-family:var(--mono);font-size:.86em;background:var(--paper);border:1px solid var(--rule-2);padding:1px 4px;color:var(--blue)}
+.md blockquote{border-left:2px solid var(--red-wash);padding-left:var(--s3);color:var(--pencil)}
+.nextup{border:1px solid var(--rule);background:var(--sheet)}
+.nextup__hd{display:flex;align-items:baseline;gap:var(--s3);padding:10px var(--s4);border-bottom:1px solid var(--rule)}
+.nextup__hd .t{font-family:var(--serif);font-size:13px;font-weight:600}
+.nextup__hd .hint{font-family:var(--mono);font-size:10px;color:var(--pencil-2);margin-left:auto}
+.nq{width:100%;display:flex;gap:var(--s3);align-items:flex-start;padding:var(--s3) var(--s4);text-align:left;
+  border-bottom:1px solid var(--rule-2);transition:background var(--t-fast)}
+.nq:last-child{border-bottom:none}
+.nq:hover{background:var(--paper)}
+.nq__n{font-family:var(--mono);font-size:10.5px;color:var(--pencil-2);flex:0 0 auto;padding-top:2px}
+.nq__bd{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.nq__q{font-family:var(--serif);font-size:13.5px;line-height:1.55}
+.nq__why{font-family:var(--mono);font-size:10px;color:var(--pencil-2)}
+.nq__go{font-size:11.5px;color:var(--blue);flex:0 0 auto;white-space:nowrap;align-self:center}
+.nq:hover .nq__go{text-decoration:underline;text-underline-offset:2px}
+
+/* ========================================================== 作答区：横线本 */
+.composer{flex:0 0 auto;border-top:1px solid var(--ink);background:var(--sheet);padding:var(--s3) var(--s6) var(--s4)}
+.composer__inner{max-width:var(--stage-max);margin:0 auto;display:flex;flex-direction:column;gap:var(--s2)}
+.composer__box{border:1px solid var(--rule);background:var(--sheet);transition:border-color var(--t-fast)}
+.composer__box:focus-within{border-color:var(--ink)}
+.composer__page{position:relative}
+.composer__page::before{content:"";position:absolute;left:28px;top:0;bottom:0;width:1px;background:var(--red-wash);pointer-events:none}
+.composer__input{width:100%;border:none;background:transparent;resize:none;outline:none;
+  font-family:var(--serif);font-size:14.5px;line-height:27px;
+  padding:6px var(--s4) 6px 40px;min-height:87px;max-height:200px;
+  background-image:repeating-linear-gradient(to bottom,transparent 0 26px,var(--rule-2) 26px 27px);
+  background-attachment:local}
+.composer__input::placeholder{color:var(--pencil-2)}
+.composer__tools{display:flex;align-items:center;gap:var(--s1);padding:var(--s2) var(--s3);border-top:1px solid var(--rule-2)}
+.tool{height:26px;padding:0 8px;display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--pencil);white-space:nowrap;flex:0 0 auto;transition:all var(--t-fast)}
+.tool:hover{background:var(--paper);color:var(--ink)}
+.tool[aria-pressed="true"]{color:var(--red-ink);border-bottom:1px solid var(--red)}
+.composer__send{margin-left:auto;display:flex;align-items:center;gap:var(--s3)}
+.kbd{font-family:var(--mono);font-size:10px;color:var(--pencil-2);border:1px solid var(--rule);padding:0 4px}
+.composer__hint{display:flex;align-items:center;gap:var(--s2);font-size:11px;color:var(--pencil-2);padding-left:2px}
+.composer__hint::before{content:"—";font-family:var(--mono)}
+
+/* ========================================================== 右栏：批改 */
+.panel__tabs{display:flex;align-items:stretch;border-bottom:1px solid var(--ink);flex:0 0 auto}
+.ptab{flex:1;height:50px;padding:0 8px;font-size:12.5px;color:var(--pencil);display:inline-flex;
+  align-items:center;justify-content:center;gap:5px;border-right:1px solid var(--rule-2);
+  border-bottom:2px solid transparent;transition:all var(--t-fast)}
+.ptab:last-child{border-right:none}
+.ptab:hover{background:var(--paper);color:var(--ink)}
+.ptab[aria-selected="true"]{background:var(--paper);color:var(--ink);font-weight:500;border-bottom-color:var(--red)}
+.ptab__n{font-family:var(--mono);font-size:10px;color:var(--pencil-2)}
+.ptab[aria-selected="true"] .ptab__n{color:var(--red-ink)}
+.panel__scroll{flex:1 1 auto;overflow-y:auto;min-height:0}
+.panel__pane{display:none;padding:var(--s5) var(--s5) var(--s8)}
+.panel__pane[data-active="1"]{display:block}
+
+.cov{display:flex;gap:var(--s4);align-items:flex-start;padding-bottom:var(--s4);border-bottom:1px solid var(--rule)}
+.cov__score{width:74px;height:74px;flex:0 0 auto;border:1.5px solid var(--red);background:var(--red-wash);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.cov__n{font-family:var(--serif);font-size:30px;font-weight:700;line-height:1;color:var(--red-ink)}
+.cov__d{font-family:var(--mono);font-size:9.5px;color:var(--red-ink)}
+.cov__side{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--s3)}
+.cov__grade{font-family:var(--serif);font-size:13.5px;font-weight:600;color:var(--ink)}
+.cov__grade s{text-decoration:none;color:var(--red-ink);font-family:var(--mono);font-size:12px;margin-left:6px}
+.cov__cells{display:flex;flex-wrap:wrap;gap:3px}
+.cell{width:22px;height:22px;border:1px solid var(--rule);background:var(--sheet)}
+.cell[data-s="hit"]{background:var(--ink);border-color:var(--ink)}
+.cell[data-s="partial"]{background:repeating-linear-gradient(-45deg,var(--ink-2) 0 2px,transparent 2px 5px);border-color:var(--ink-2)}
+.cell[data-s="miss"]{border:1px solid var(--red);background:var(--sheet)}
+.cov__note{font-size:12.5px;line-height:1.75;color:var(--ink-2)}
+.stat{display:flex;border:1px solid var(--rule-2);border-top:none}
+.stat>div{flex:1;padding:9px var(--s3);display:flex;flex-direction:column;gap:2px;border-right:1px solid var(--rule-2)}
+.stat>div:last-child{border-right:none}
+.stat b{font-family:var(--mono);font-size:13px;font-weight:500}
+.stat span{font-size:10px;color:var(--pencil-2)}
+
+.sect{padding:var(--s5) 0;border-bottom:1px solid var(--rule-2)}
+.sect:last-child{border-bottom:none}
+.sect__hd{display:flex;align-items:baseline;gap:var(--s2);margin-bottom:var(--s3)}
+.sect__ttl{font-family:var(--serif);font-size:13px;font-weight:600}
+.sect__hd::after{content:"";flex:1;height:1px;background:var(--rule-2);transform:translateY(-4px);order:2}
+.sect__hint{font-family:var(--mono);font-size:10px;color:var(--pencil-2);order:3}
+
+.points{display:flex;flex-direction:column;gap:var(--s3)}
+.point{border:1px solid var(--rule);background:var(--sheet);position:relative}
+.point::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px}
+.point[data-state="hit"]::before{background:var(--rule)}
+.point[data-state="partial"]::before{background:var(--ink-2)}
+.point[data-state="miss"]::before{background:var(--red)}
+.point__hd{display:flex;align-items:baseline;gap:var(--s2);padding:9px var(--s3) 9px var(--s4);border-bottom:1px solid var(--rule-2)}
+.point__idx{font-family:var(--mono);font-size:10.5px;color:var(--pencil-2);flex:0 0 auto}
+.pst{font-family:var(--serif);font-size:12.5px;font-weight:600;flex:1;min-width:0}
+.pst[data-state="hit"]{color:var(--ink-2)}
+.pst[data-state="partial"]{color:var(--ink)}
+.pst[data-state="miss"]{color:var(--red-ink)}
+.point__cov{font-family:var(--mono);font-size:10.5px;color:var(--pencil-2);flex:0 0 auto}
+.point__bd{padding:var(--s3) var(--s3) var(--s3) var(--s4);font-family:var(--serif);font-size:13.5px;line-height:1.85;color:var(--ink-2)}
+.hl-miss{color:var(--red-ink);text-decoration:underline wavy var(--red);text-decoration-thickness:1px;text-underline-offset:4px}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:var(--s3);align-items:center}
+.chip{font-family:var(--mono);font-size:10.5px;padding:1px 5px;border:1px solid var(--rule);color:var(--ink-2);white-space:nowrap;background:var(--sheet)}
+.chip--off{border-color:var(--red);color:var(--red-ink);background:var(--red-wash)}
+.chip--lead{font-family:var(--sans);font-size:10.5px;border:none;background:none;color:var(--pencil-2);padding-left:0}
+.point__ft{display:flex;align-items:center;gap:var(--s2);padding:0 var(--s3) var(--s3) var(--s4);flex-wrap:wrap}
+.src{display:block;font-family:var(--mono);font-size:10px;color:var(--blue);
+  padding:2px 0;border-bottom:1px dotted var(--blue);cursor:pointer;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.src:hover{color:var(--red-ink);border-bottom-color:var(--red-ink)}
+
+.srcitem{border:1px solid var(--rule);background:var(--sheet);margin-bottom:var(--s3)}
+.srcitem__hd{display:flex;align-items:center;gap:var(--s3);padding:8px var(--s4);border-bottom:1px solid var(--rule-2)}
+.srcitem__file{flex:1;min-width:0;font-family:var(--mono);font-size:10px;color:var(--pencil-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rel{display:flex;align-items:center;gap:5px;flex:0 0 auto}
+.rel__bar{width:30px;height:2px;background:var(--rule-2)}
+.rel__bar i{display:block;height:100%;background:var(--blue)}
+.rel__v{font-family:var(--mono);font-size:10px;color:var(--pencil-2)}
+.srcitem__bd{padding:var(--s3) var(--s4) var(--s4);font-family:var(--serif);font-size:13.5px;line-height:1.85;color:var(--ink-2);max-height:220px;overflow:auto}
+.srcitem__q{display:block;font-weight:600;color:var(--ink);margin-bottom:5px}
+.cite{margin-top:var(--s3);padding-top:var(--s3);border-top:1px dashed var(--rule)}
+.cite__t{font-family:var(--mono);font-size:10px;color:var(--pencil-2);display:flex;align-items:center;gap:5px;margin-bottom:5px}
+.cite__x{font-family:var(--serif);font-size:13px;line-height:1.8;color:var(--ink-2);border-left:2px solid var(--rule);padding-left:var(--s3)}
+
+.chat{display:flex;flex-direction:column;gap:var(--s3);margin-bottom:var(--s3)}
+.bub{font-size:13px;line-height:1.75;padding:10px var(--s3)}
+.bub--me{align-self:flex-end;max-width:92%;background:var(--ink);color:var(--sheet);font-family:var(--serif)}
+.bub--ai{align-self:flex-start;width:100%;background:var(--paper);border:1px solid var(--rule);color:var(--ink-2);font-family:var(--serif)}
+.chatbox{border:1px solid var(--rule);background:var(--sheet)}
+.chatbox:focus-within{border-color:var(--ink)}
+.chatbox textarea{width:100%;border:none;background:transparent;resize:none;padding:9px var(--s3) 0;font-family:var(--serif);font-size:13px;line-height:1.7;min-height:46px;max-height:120px;outline:none}
+.chatbox__ft{display:flex;align-items:center;gap:var(--s2);padding:6px var(--s3) 9px}
+.chatbox__hint{font-family:var(--mono);font-size:10px;color:var(--pencil-2);flex:1;min-width:0}
+.askbtn{height:26px;padding:0 11px;background:var(--red);color:#fff;font-size:11.5px;display:inline-flex;align-items:center;gap:5px;flex:0 0 auto}
+.askbtn:hover{background:var(--red-ink)}
+.askbtn:disabled{opacity:.4;pointer-events:none}
+.qsug{display:flex;flex-direction:column;margin-top:var(--s3);border:1px solid var(--rule-2)}
+.qsug button{text-align:left;font-size:11.5px;color:var(--pencil);padding:7px var(--s3);border-bottom:1px solid var(--rule-2);transition:all var(--t-fast)}
+.qsug button:last-child{border-bottom:none}
+.qsug button:hover{background:var(--paper);color:var(--ink)}
+
+.empty{display:flex;flex-direction:column;gap:var(--s4);padding:var(--s8) 0}
+.empty__art{width:44px;height:44px;border:1px solid var(--rule);display:grid;place-items:center;color:var(--pencil-2);background:var(--sheet)}
+.empty__t{font-family:var(--serif);font-size:14px;font-weight:600}
+.empty__d{font-size:12.5px;line-height:1.8;color:var(--pencil)}
+.empty__steps{display:flex;flex-direction:column;border-top:1px solid var(--rule-2)}
+.estep{display:flex;gap:var(--s3);padding:9px 0;font-size:12.5px;color:var(--pencil);border-bottom:1px solid var(--rule-2);align-items:baseline}
+.estep__n{font-family:var(--mono);font-size:10.5px;color:var(--red-ink);flex:0 0 auto}
+.analyzing{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--pencil);padding:var(--s3) 0}
+.analyzing__spin{width:12px;height:12px;border:1.5px solid var(--rule);border-top-color:var(--red);border-radius:50%;animation:spin .7s linear infinite;flex:0 0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(540px,100vw);background:var(--sheet);border-left:1px solid var(--ink);
+  transform:translateX(101%);transition:transform var(--t-base) var(--ease);z-index:61;display:flex;flex-direction:column}
+.drawer[data-open="1"]{transform:none}
+.drawer__hd{height:56px;flex:0 0 auto;display:flex;align-items:center;gap:var(--s3);padding:0 var(--s5);border-bottom:1px solid var(--ink)}
+.drawer__ttl{font-family:var(--serif);font-size:15px;font-weight:600;display:flex;align-items:center;gap:var(--s2)}
+.drawer__bd{flex:1;overflow-y:auto;padding:var(--s5)}
+.close-x{width:28px;height:28px;display:grid;place-items:center;color:var(--pencil);margin-left:auto}
+.close-x:hover{background:var(--paper);color:var(--ink)}
+/* 抽屉专用关闭按钮：仅窄屏抽屉态显示，需排在上一条之后 */
+.rail__close,.panel__close{display:none}
+.due{border:1px solid var(--rule);border-bottom:none;padding:var(--s3) var(--s4);background:var(--sheet)}
+.due:last-child{border-bottom:1px solid var(--rule)}
+.due:hover{background:var(--paper)}
+.due__hd{display:flex;align-items:center;gap:var(--s2);margin-bottom:6px}
+.due__q{font-family:var(--serif);font-size:13.5px;line-height:1.6;margin-bottom:var(--s3)}
+.due__ft{display:flex;align-items:center;gap:var(--s3);font-size:11px;color:var(--pencil-2);flex-wrap:wrap;font-family:var(--mono)}
+.due__cov{font-family:var(--mono);font-weight:500;color:var(--red-ink)}
+.filters{display:flex;gap:var(--s2);margin-bottom:var(--s4);align-items:center}
+
+.mtabs{display:none;position:fixed;left:0;right:0;bottom:0;height:calc(52px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:var(--sheet);border-top:1px solid var(--ink);z-index:50}
+.mtabs__row{display:flex;height:52px}
+.mtab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10.5px;color:var(--pencil);position:relative;border-right:1px solid var(--rule-2)}
+.mtab:last-child{border-right:none}
+.mtab[aria-selected="true"]{color:var(--ink);background:var(--paper)}
+.mtab__b{position:absolute;top:0;left:0;right:0;height:2px;background:var(--red);opacity:0}
+.mtab[aria-selected="true"] .mtab__b{opacity:1}
+
+@media (max-width:1439px){ :root{--rail-w:240px;--panel-w:364px;--stage-max:740px} .mod__lvl{display:none} }
+@media (max-width:1279px){ .board__strip .mod:nth-child(n+8){display:none} .engine .engtxt{display:none} .engine{padding:0 8px} }
+@media (max-width:1199px){
+  .rail{position:fixed;top:var(--topbar-h);bottom:calc(52px + env(safe-area-inset-bottom));left:0;z-index:55;transform:translateX(-101%);transition:transform var(--t-base) var(--ease);border-right:1px solid var(--ink)}
+  .rail[data-open="1"]{transform:none}
+  .rail__close{display:grid}
+  .mtabs{display:block;z-index:70}
+  .scrim{bottom:calc(52px + env(safe-area-inset-bottom))}
+  .workspace{padding-bottom:calc(52px + env(safe-area-inset-bottom))}
+  .panel{position:fixed;top:var(--topbar-h);bottom:calc(52px + env(safe-area-inset-bottom));right:0;z-index:55;transform:translateX(101%);transition:transform var(--t-base) var(--ease);width:min(420px,94vw)}
+  .panel[data-open="1"]{transform:none}
+}
+@media (max-width:900px){
+  .brand__sub{display:none} .mastery__txt{display:none}
+  .board__strip .mod:nth-child(n+5){display:none}
+  .stage__head{padding:0 var(--s4);gap:var(--s2)}
+  .stream__inner{padding:0 var(--s4)}
+  .composer{padding:var(--s3) var(--s4) var(--s3)}
+  .mode-seg{display:none} #qSec{display:none}
+  .head-actions .btn__label{display:none}
+}
+@media (max-width:640px){
+  :root{--s6:16px;--s8:24px}
+  .tool__t{display:none} .tool{padding:0 7px}
+  .composer__send .kbd{display:none}
+  .topbar{padding:0 var(--s2);gap:var(--s2)}
+  .board__strip{display:none} .vsep{display:none}
+  .qcard{padding:var(--s4)} .qcard__q{font-size:17px}
+  .timechip{display:none}
+  .drawer{width:100vw}
+  .pop,.pop--wide,.pop--eng{position:fixed;left:0;right:0;width:auto;top:var(--topbar-h);transform:none;border-left:none;border-right:none}
+  .stat>div{padding:8px}
+  .cov{gap:var(--s3)} .cov__score{width:64px;height:64px} .cov__n{font-size:26px}
+}
+@media (prefers-reduced-motion:reduce){ *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important} }
+@media print{ .rail,.panel,.topbar,.composer,.mtabs{display:none!important} body{overflow:visible} .app{height:auto} .stream,.panel__scroll{overflow:visible} }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="topbar">
+    <div class="seal" aria-hidden="true">舱</div>
+    <div class="brand">
+      <span class="brand__name">面试舱</span>
+      <span class="brand__sub">默写与批改</span>
+    </div>
+
+    <button class="icon-btn" id="railToggle" aria-label="打开目录与抽题范围" style="display:none">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4h12M2 8h12M2 12h8"/></svg>
+    </button>
+
+    <div class="board">
+      <div class="board__strip" id="boardStrip" role="list" aria-label="各篇章掌握度"></div>
+      <div class="vsep" aria-hidden="true"></div>
+      <div class="mastery" id="masteryBtn" role="button" tabindex="0" aria-label="查看各篇章掌握度">
+        <div class="mastery__ring">
+          <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+            <circle cx="15" cy="15" r="12" fill="none" stroke="var(--rule)" stroke-width="2.5"/>
+            <circle id="masteryArc" cx="15" cy="15" r="12" fill="none" stroke="var(--ink)" stroke-width="2.5" transform="rotate(-90 15 15)"/>
+          </svg>
+          <span class="mastery__val" id="masteryVal">—</span>
+        </div>
+        <div class="mastery__txt">
+          <span class="mastery__t1">总掌握度</span>
+          <span class="mastery__t2" id="masterySub">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="topbar__actions">
+      <button class="engine" id="engineBtn" aria-expanded="false" aria-label="AI 引擎状态">
+        <span class="engine__dot"></span><span class="engtxt">引擎 <b id="engineName">本地</b></span>
+      </button>
+      <button class="icon-btn" id="dueBtn" aria-label="待复习队列">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4.5A1.5 1.5 0 0 1 4 3h8a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 12 13H4a1.5 1.5 0 0 1-1.5-1.5v-7Z"/><path d="M5.5 6.5h5M5.5 9.5h3"/></svg>
+        <span class="icon-btn__badge" id="dueBadge" hidden>0</span>
+      </button>
+      <button class="icon-btn" id="setBtn" aria-expanded="false" aria-label="抽题设置">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v1.8M8 12.7v1.8M1.5 8h1.8M12.7 8h1.8M3.4 3.4l1.3 1.3M11.3 11.3l1.3 1.3M12.6 3.4l-1.3 1.3M4.7 11.3l-1.3 1.3"/></svg>
+      </button>
+      <button class="avatar" aria-label="账户：刘帅">刘</button>
+    </div>
+
+    <div class="pop" id="setPop" role="dialog" aria-label="抽题设置">
+      <div class="pop__hd">抽题设置</div>
+      <div class="pop__bd">
+        <div class="field">
+          <span class="field__k">出题顺序</span>
+          <span class="field__c"><span class="seg" data-seg="order">
+            <button aria-pressed="true">随机</button><button aria-pressed="false">薄弱优先</button><button aria-pressed="false">未答过</button>
+          </span></span>
+        </div>
+        <div class="field">
+          <span class="field__k">判定严格度</span>
+          <span class="field__c"><span class="seg" data-seg="strict">
+            <button aria-pressed="false">宽松</button><button aria-pressed="true">标准</button><button aria-pressed="false">严格</button>
+          </span></span>
+        </div>
+        <div class="field">
+          <span class="field__k">作答计时</span>
+          <span class="field__c"><button class="switch" role="switch" aria-checked="true" aria-label="作答计时"></button></span>
+        </div>
+        <div class="field">
+          <span class="field__k">答完自动下一题</span>
+          <span class="field__c"><button class="switch" role="switch" aria-checked="false" aria-label="答完自动下一题"></button></span>
+        </div>
+        <div class="field">
+          <span class="field__k">夜读配色</span>
+          <span class="field__c"><button class="switch" role="switch" aria-checked="false" id="themeSwitch" aria-label="夜读配色"></button></span>
+        </div>
+        <div class="field">
+          <span class="field__k">进度</span>
+          <span class="field__c" style="font-size:11.5px;color:var(--pencil-2)">存在本机浏览器，不上传</span>
+        </div>
+        <div class="field">
+          <span class="field__k"></span>
+          <span class="field__c"><button class="btn btn--quiet btn--sm" id="resetBtn" style="color:var(--red-ink)">清空全部记录</button></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pop pop--eng" id="engPop" role="dialog" aria-label="AI 引擎状态">
+      <div class="pop__hd">AI 引擎 <span class="sub" id="engSub"></span></div>
+      <div class="pop__bd" id="engList"></div>
+      <div class="pop__bd" style="border-top:1px solid var(--rule);font-size:11.5px;color:var(--pencil);line-height:1.7">
+        检索、拆要点、判覆盖都在浏览器内算，作答不上传。讲义原文来自题库仓库，引用时不做改写。
+      </div>
+    </div>
+
+    <div class="pop pop--wide" id="boardPop" role="dialog" aria-label="各篇章掌握度">
+      <div class="pop__hd">各篇章掌握度 <span class="sub" id="boardPopSub"></span></div>
+      <div class="boardpop__grid" id="boardGrid"></div>
+      <div class="pop__bd" style="border-top:1px solid var(--rule);display:flex;align-items:center;gap:var(--s3)">
+        <span style="font-family:var(--serif);font-size:12.5px">建议优先</span>
+        <span style="margin-left:auto" id="boardWorst"></span>
+      </div>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <aside class="rail" id="rail" aria-label="目录与抽题范围">
+      <div class="rail__head">
+        <div style="display:flex;align-items:center;gap:var(--s2)">
+          <span class="rail__cap">题库</span>
+          <button class="rail__close close-x" id="railClose" aria-label="收起目录">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+          </button>
+        </div>
+        <button class="btn btn--block" id="importBtn">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 3.2v9.6M3.2 8h9.6"/></svg>
+          导入讲义
+        </button>
+        <div class="lib" id="lib" data-open="0">
+          <button class="lib__btn" id="libBtn" aria-expanded="false">
+            <span class="lib__ico">黑马</span>
+            <span class="lib__meta">
+              <span class="lib__src" id="libSrc">—</span>
+              <span class="lib__name" id="libName">—</span>
+            </span>
+            <svg class="lib__chev" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5 8 10.5l4-4"/></svg>
+          </button>
+          <div class="lib__body" id="libBody"></div>
+        </div>
+      </div>
+
+      <div class="rail__scroll">
+        <div class="scope__hd">
+          <span class="t">抽题范围</span>
+          <button class="a" id="scopeToggle">全不选</button>
+        </div>
+        <div id="chapList"></div>
+      </div>
+
+      <div class="rail__foot">
+        <button class="btn btn--quiet btn--sm" id="dueBtn2">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4.5v4l2.5 1.5"/><circle cx="8" cy="8" r="6"/></svg>
+          待复习 <b class="mono" id="dueBadge2" style="color:var(--red-ink)">0</b>
+        </button>
+        <button class="btn btn--quiet btn--sm" id="statsBtn">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12.5V9M6.5 12.5V4M10.5 12.5V7M14 12.5V2.5"/></svg>
+          已答 <b class="mono" id="ansCount">0</b>
+        </button>
+      </div>
+    </aside>
+
+    <main class="stage" aria-label="作答区">
+      <div class="stage__head">
+        <span class="tag t--db" id="qTag"><span class="tag__dot"></span>数据库</span>
+        <span class="tag tag--muted" id="qSec">—</span>
+        <span class="mode-seg"><span class="seg" data-seg="mode">
+          <button aria-pressed="true">随机</button><button aria-pressed="false">待复习</button>
+        </span></span>
+        <span class="timechip" id="timeChip">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="5.8"/><path d="M8 5v3.2l2 1.2"/></svg>
+          <span id="timerVal">00:00</span>
+        </span>
+        <div class="head-actions">
+          <button class="btn btn--quiet btn--sm" id="nextBtn"><span class="btn__label">换一题</span>
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h8M8.6 4.6 12 8l-3.4 3.4"/></svg>
+          </button>
+          <button class="panel__close close-x" id="panelClose" aria-label="收起批改栏" hidden>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="stream" id="stream">
+        <div class="stream__inner">
+          <div class="divider"><span id="qDivider">正在抽题</span></div>
+          <div class="msg">
+            <div class="msg__meta">
+              <span id="qFrom">—</span>
+              <span id="qDrawnAt">—</span>
+              <span id="qStat">—</span>
+            </div>
+            <div class="qcard">
+              <div class="qcard__label">面试官问</div>
+              <div class="qcard__q" id="qText">正在从题库抽题…</div>
+            </div>
+          </div>
+          <div id="answerZone"></div>
+          <div id="reviewZone"></div>
+        </div>
+      </div>
+
+      <div class="composer">
+        <div class="composer__inner">
+          <div class="composer__box" id="composerBox">
+            <div class="composer__page">
+              <textarea class="composer__input" id="composerInput" rows="3" placeholder="用自己的话默一遍。想到几句写几句，答不全没关系 —— 先回忆，再对照。"></textarea>
+            </div>
+            <div class="composer__tools">
+              <button class="tool" id="voiceTool" aria-pressed="false">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="4" height="7" rx="2"/><path d="M4 8a4 4 0 0 0 8 0M8 12v1.8"/></svg>
+                <span class="tool__t">口述</span>
+              </button>
+              <button class="tool" id="codeTool">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 5 2.8 8l2.7 3M10.5 5l2.7 3-2.7 3"/></svg>
+                <span class="tool__t">贴代码</span>
+              </button>
+              <button class="tool" id="dunnoTool" aria-pressed="false">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M6.4 6.4a1.6 1.6 0 1 1 2.1 1.5c-.4.2-.5.5-.5.9M8 11.3v.1"/></svg>
+                <span class="tool__t">想不起来</span>
+              </button>
+              <div class="composer__send">
+                <span class="kbd">⌘↵</span>
+                <button class="btn btn--red btn--sm" id="submitBtn">
+                  交卷批改
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8h10M9 4.2 12.8 8 9 11.8"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="composer__hint"><span id="composerHint">先回忆，再对照</span></div>
+        </div>
+      </div>
+    </main>
+
+    <aside class="panel" id="panel" aria-label="批改">
+      <div class="panel__tabs" role="tablist">
+        <button class="ptab" role="tab" aria-selected="true" data-pane="points">批改<span class="ptab__n" id="pointCount" hidden></span></button>
+        <button class="ptab" role="tab" aria-selected="false" data-pane="src">讲义原文<span class="ptab__n" id="srcCount" hidden></span></button>
+        <button class="ptab" role="tab" aria-selected="false" data-pane="ask">追问<span class="ptab__n" id="askCount" hidden></span></button>
+      </div>
+      <div class="panel__scroll">
+        <div class="panel__pane" data-pane="points" data-active="1">
+          <div class="analyzing" id="analyzing" hidden>
+            <span class="analyzing__spin"></span><span id="analyzingTxt">正在比对…</span>
+          </div>
+
+          <div id="pEmpty" class="empty">
+            <div class="empty__art" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9A1.5 1.5 0 0 1 18.5 16H9l-5 4V5.5Z"/></svg>
+            </div>
+            <div class="empty__t">还没批改</div>
+            <div class="empty__d">交卷后这里会告诉你差哪几句：要点逐条对照，没答到的地方划红线，出处标到讲义原文。</div>
+            <div class="empty__steps">
+              <div class="estep"><span class="estep__n">1</span><span>用自己的话默一遍，写或说都行</span></div>
+              <div class="estep"><span class="estep__n">2</span><span>看要点覆盖、被划红的缺口、讲义出处</span></div>
+              <div class="estep"><span class="estep__n">3</span><span>进待复习，隔天再默一次</span></div>
+            </div>
+          </div>
+
+          <div id="pContent" hidden>
+            <div class="cov">
+              <div class="cov__score">
+                <span class="cov__n" id="covNum">0</span>
+                <span class="cov__d" id="covDen">/ 0 要点</span>
+              </div>
+              <div class="cov__side">
+                <div class="cov__grade" id="covGrade"><span id="covGradeTxt">—</span></div>
+                <div class="cov__cells" id="covCells"></div>
+                <p class="cov__note" id="covNote"></p>
+              </div>
+            </div>
+            <div class="stat">
+              <div><b id="statTime">00:00</b><span>本题用时</span></div>
+              <div><b id="statMiss">0</b><span>没答到</span></div>
+              <div><b id="statSeen">第 1 次</b><span>遇见此题</span></div>
+            </div>
+            <div id="offTopicZone"></div>
+            <div class="sect">
+              <div class="sect__hd"><span class="sect__ttl">逐条对照</span><span class="sect__hint" id="pointHint"></span></div>
+              <div class="points" id="points"></div>
+            </div>
+            <div class="sect">
+              <div class="sect__hd"><span class="sect__ttl">我当时记住了多少</span><span class="sect__hint">决定下次抽到的概率</span></div>
+              <span class="seg" data-seg="self">
+                <button aria-pressed="false">会了</button><button aria-pressed="true">还得看</button><button aria-pressed="false">不会</button>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel__pane" data-pane="src">
+          <div class="md" style="margin-bottom:var(--s5)">
+            <p>以「题目 + 你的作答」为查询，在讲义片段里做 BM25 检索。相关度是相对最高分的比例。引的是原文，不改写。</p>
+          </div>
+          <div id="srcList"></div>
+        </div>
+
+        <div class="panel__pane" data-pane="ask">
+          <div class="sect" style="padding-top:0">
+            <div class="sect__hd"><span class="sect__ttl">面试官接着会问</span><span class="sect__hint">取自讲义原文序列</span></div>
+            <div id="askChain"></div>
+          </div>
+          <div class="sect">
+            <div class="sect__hd"><span class="sect__ttl">就这道题继续问</span></div>
+            <div class="chat" id="chatLog"></div>
+            <div class="chatbox">
+              <textarea id="askInput" rows="2" placeholder="例：叶子节点为什么用双向链表？"></textarea>
+              <div class="chatbox__ft">
+                <span class="chatbox__hint">按讲义原文回答，标出处</span>
+                <button class="askbtn" id="askSend">追问</button>
+              </div>
+            </div>
+            <div class="qsug" id="askSug"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <nav class="mtabs" role="tablist" aria-label="视图切换">
+    <div class="mtabs__row">
+      <button class="mtab" role="tab" data-view="rail" aria-selected="false"><span class="mtab__b"></span>
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h5v11H4zM11 4.5h5v11h-5z"/></svg>目录</button>
+      <button class="mtab" role="tab" data-view="stage" aria-selected="true"><span class="mtab__b"></span>
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5.8A1.3 1.3 0 0 1 4.8 4.5h10.4a1.3 1.3 0 0 1 1.3 1.3v6.4a1.3 1.3 0 0 1-1.3 1.3H8l-4.5 3v-11Z"/></svg>默写</button>
+      <button class="mtab" role="tab" data-view="panel" aria-selected="false"><span class="mtab__b"></span>
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h12M4 9h12M4 13h7"/><circle cx="15" cy="14.5" r="2.6"/></svg>批改</button>
+    </div>
+  </nav>
+</div>
+
+<div class="scrim" id="scrim" data-open="0"></div>
+<aside class="drawer" id="dueDrawer" aria-label="待复习" data-open="0">
+  <div class="drawer__hd">
+    <span class="drawer__ttl">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="var(--red)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4.5v4l2.5 1.5"/><circle cx="8" cy="8" r="6"/></svg>
+      待复习
+    </span>
+    <span class="mono" style="font-size:11px;color:var(--pencil-2)" id="dueSummary">—</span>
+    <button class="close-x" id="drawerClose" aria-label="关闭">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+    </button>
+  </div>
+  <div class="drawer__bd">
+    <div class="filters">
+      <button class="btn btn--red btn--sm" id="reviewBatch">开始复习这一批</button>
+    </div>
+    <div id="dueList"></div>
+  </div>
+</aside>
+
+<script src="corpus.js"></script>
+<script src="engine.js"></script>
+<script>
+/* ============================================================
+   面试舱 · 应用逻辑（本轮只重构视觉与文案层，引擎与数据未动）
+   数据：corpus.js（175 道真题 + 193 个讲义片段）
+   推理：engine.js（BM25 检索 / 要点拆解 / 覆盖度评分）
+   ============================================================ */
+(function(){
+'use strict';
+const $ = s=>document.querySelector(s);
+const $$ = s=>[...document.querySelectorAll(s)];
+const C = window.CORPUS, E = window.MLEngine;
+const STORE_KEY = 'mldrill.v2';
+
+const blank = () => ({ answers:{}, chapters:{}, seen:{}, chat:{} });
+let state = blank();
+try { const raw = localStorage.getItem(STORE_KEY); if (raw) state = Object.assign(blank(), JSON.parse(raw)); } catch(e){}
+function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){} }
+
+const t0 = performance.now();
+const INDEX = E.buildIndex(C.chunks);
+const BUILD_MS = Math.max(1, Math.round(performance.now() - t0));
+const ITEMS = C.items;
+const ACTIVE = C.chapters.filter(c => c.count > 0);
+const selected = new Set(ACTIVE.map(c => c.id));
+const DUE_MAX = 0.6;
+
+function chapStat(id){ const s = state.chapters[id]; return (!s||!s.n) ? {n:0,pct:null} : {n:s.n,pct:Math.round(s.sum/s.n*100)} }
+function overall(){
+  let n=0,sum=0;
+  ACTIVE.forEach(c=>{ const s=state.chapters[c.id]; if(s&&s.n){ n+=s.n; sum+=s.sum; } });
+  return {n, pct: n ? Math.round(sum/n*100) : null};
+}
+function recordAnswer(item, ratio){
+  const c = state.chapters[item.ch] = state.chapters[item.ch] || {n:0,sum:0};
+  const prev = state.answers[item.id];
+  if(prev!=null) c.sum -= prev; else c.n += 1;
+  c.sum += ratio; state.answers[item.id] = ratio;
+  state.seen[item.id] = (state.seen[item.id]||0) + 1; save();
+}
+
+/* ---------- 工具 ---------- */
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+/* 红波浪线：只划没答到的地方。答对的不着色 —— 红笔只改错。 */
+function wavy(text, missing){
+  let out = esc(text);
+  (missing||[]).filter(t=>t.length>=2).sort((a,b)=>b.length-a.length).forEach(t=>{
+    const re = new RegExp('(' + t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')','i');
+    out = out.replace(re, '<span class="hl-miss">$1</span>');
+  });
+  return out;
+}
+const nowHM = ()=> new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+const fmt = s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+const pressed = seg => { const b = $(`.seg[data-seg="${seg}"] button[aria-pressed="true"]`); return b?b.textContent.trim():'' };
+
+/* ---------- 顶栏 ---------- */
+function renderBoard(){
+  $('#boardStrip').innerHTML = ACTIVE.map(c=>{
+    const st = chapStat(c.id), pct = st.pct==null?0:st.pct;
+    return `<div class="mod" role="listitem" data-weak="${st.pct!=null&&st.pct<45?1:0}" title="${esc(c.name)} · ${c.count} 题 · ${st.pct==null?'未开始':st.pct+'% 掌握'}">
+      <span class="mod__label">${esc(c.name)}</span>
+      <span class="mod__bar"><i style="width:${pct}%"></i></span>
+      <span class="mod__lvl">${st.pct==null?'—':st.pct}</span></div>`;
+  }).join('');
+  $('#boardGrid').innerHTML = ACTIVE.map(c=>{
+    const st = chapStat(c.id), pct = st.pct==null?0:st.pct;
+    return `<div class="bp">
+      <div class="bp__r"><span class="bp__n">${esc(c.name)}</span>
+      <span class="bp__v">${st.pct==null?'未开始':st.pct+'%'}</span></div>
+      <div class="bp__track"><i style="width:${pct}%"></i></div></div>`;
+  }).join('');
+  const o = overall();
+  $('#masteryVal').textContent = o.pct==null ? '—' : o.pct+'%';
+  $('#masterySub').textContent = `${ACTIVE.length} 篇 · ${ITEMS.length} 题`;
+  $('#boardPopSub').textContent = `已答 ${o.n} 题 / 共 ${ITEMS.length} 题`;
+  const CC = 2*Math.PI*12;
+  $('#masteryArc').setAttribute('stroke-dasharray', CC.toFixed(1));
+  $('#masteryArc').setAttribute('stroke-dashoffset', (CC*(1-(o.pct||0)/100)).toFixed(1));
+  const w = ACTIVE.map(c=>({c,pct:chapStat(c.id).pct})).sort((a,b)=>(a.pct==null?-1:a.pct)-(b.pct==null?-1:b.pct))[0];
+  $('#boardWorst').innerHTML = w
+    ? `<span class="tag" style="background:var(--b-${w.c.id});color:var(--c-${w.c.id});border-color:transparent"><span class="tag__dot"></span>${esc(w.c.name)} · ${w.pct==null?'未开始':w.pct+'%'}</span>`
+    : '<span style="font-family:var(--mono);font-size:11px;color:var(--pencil-2)">先答几题</span>';
+}
+
+/* ---------- 左栏 ---------- */
+function renderLib(){
+  $('#libSrc').textContent = C.source;
+  $('#libName').textContent = C.title;
+  $('#libBody').innerHTML = ACTIVE.map(c=>
+      `<div class="lib__row"><span class="nm">${esc((c.files[0]||'').replace(/__/g,'/'))}</span><span class="sz">${c.count} 题</span></div>`).join('')
+    + `<div class="lib__row"><span class="nm">切分规则：面试官问 → 题目；候选人答 → 参考答案</span></div>`;
+}
+function renderChaps(){
+  const dm = dueMap();
+  $('#chapList').innerHTML = ACTIVE.map(c=>{
+    const st = chapStat(c.id), pct = st.pct==null?0:st.pct, on = selected.has(c.id), d = dm[c.id]||0;
+    return `<button class="chap" data-chap="${c.id}" aria-pressed="${on}">
+      <span class="chk" data-on="${on?1:0}" aria-hidden="true">
+        <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="var(--sheet)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 5.2 4 7.7 8.5 2.5"/></svg></span>
+      <span class="chap__dot" style="background:var(--c-${c.id})"></span>
+      <span class="chap__nm">
+        <span class="chap__t1">${esc(c.name)}</span>
+        <span class="chap__t2"><span>${c.count} 题</span>
+          <span class="chap__prog"><i style="width:${pct}%;background:var(--c-${c.id})"></i></span></span>
+      </span>
+      ${d?`<span class="chap__due">待${d}</span>`:''}
+      <span class="chap__pct">${st.pct==null?'—':st.pct+'%'}</span></button>`;
+  }).join('');
+}
+
+/* ---------- 待复习 ---------- */
+function dueList(){
+  return ITEMS.filter(it => state.answers[it.id] != null && state.answers[it.id] < DUE_MAX)
+    .map(it => ({it, r: state.answers[it.id], seen: state.seen[it.id]||1}))
+    .sort((a,b)=> a.r - b.r);
+}
+function dueMap(){ const m={}; dueList().forEach(d=>{ m[d.it.ch]=(m[d.it.ch]||0)+1 }); return m }
+function renderDue(){
+  const list = dueList(), total = Object.keys(state.answers).length;
+  $('#dueBadge').textContent = list.length;
+  $('#dueBadge').hidden = list.length === 0;
+  $('#dueBadge2').textContent = list.length;
+  $('#ansCount').textContent = total;
+  $('#dueSummary').textContent = list.length ? `${list.length} 题待复习 / 已答 ${total}` : `暂无待复习 / 已答 ${total}`;
+  if(!list.length){
+    $('#dueList').innerHTML = `<div class="empty" style="padding:var(--s6) 0">
+      <div class="empty__t">还没有待复习的题</div>
+      <div class="empty__d">要点覆盖低于 60% 的题会自动进这里，下次优先抽到。</div></div>`;
+    return;
+  }
+  $('#dueList').innerHTML = list.map(({it,r,seen})=>`
+    <div class="due">
+      <div class="due__hd">
+        <span class="tag" style="background:var(--b-${it.ch});color:var(--c-${it.ch});border-color:transparent">${esc(it.chName)}</span>
+        <span class="mono" style="margin-left:auto;font-size:10.5px;color:var(--pencil-2)">第 ${seen} 次遇见</span>
+      </div>
+      <div class="due__q">${esc(it.q)}</div>
+      <div class="due__ft">
+        <span>覆盖 <b class="due__cov">${Math.round(r*100)}%</b></span><span>${esc(it.sec)}</span>
+        <button class="btn btn--quiet btn--sm" style="margin-left:auto;color:var(--blue)" data-redraw="${it.id}">再默一次</button>
+      </div></div>`).join('');
+}
+
+/* ---------- 抽题 ---------- */
+let current = null, submitted = false, elapsed = 0, timerId = null;
+function startTimer(){ clearInterval(timerId); elapsed=0; $('#timerVal').textContent='00:00';
+  timerId=setInterval(()=>{elapsed++;$('#timerVal').textContent=fmt(elapsed)},1000) }
+
+function drawQuestion(forceId){
+  const pool = ITEMS.filter(it => selected.has(it.ch));
+  let item = forceId ? ITEMS.find(x=>x.id===forceId) : null;
+  if(!item){
+    if(!pool.length){ $('#qText').textContent = '先在左侧勾选至少一个篇章'; return }
+    let cands = pool;
+    if(pressed('mode')==='待复习'){
+      const due = dueList().map(d=>d.it).filter(it=>selected.has(it.ch));
+      if(due.length) cands = due;
+    }
+    const ord = pressed('order');
+    if(ord==='未答过'){ const fresh = cands.filter(it=>state.answers[it.id]==null); if(fresh.length) cands = fresh; }
+    if(ord==='薄弱优先' || pressed('mode')==='待复习'){
+      cands = [...cands].sort((a,b)=>{
+        const ra = state.answers[a.id], rb = state.answers[b.id];
+        return (ra==null?-1:ra) - (rb==null?-1:rb);
+      });
+      item = cands[0];
+    } else item = cands[Math.floor(Math.random()*cands.length)];
+  }
+  if(!item) return;
+  current = item; submitted = false;
+  $('#qTag').className = 'tag t--' + item.ch;
+  $('#qTag').innerHTML = `<span class="tag__dot"></span>${esc(item.chName)}`;
+  $('#qSec').textContent = item.sec.length>24 ? item.sec.slice(0,24)+'…' : item.sec;
+  $('#qFrom').textContent = item.chName + ' · ' + item.sec;
+  $('#qDrawnAt').textContent = '抽题 ' + nowHM();
+  $('#qStat').textContent = item.a.length + ' 字参考';
+  $('#qText').textContent = item.q;
+  $('#qDivider').textContent = `${item.chName} · ${item.sec}`;
+  $('#answerZone').innerHTML = ''; $('#reviewZone').innerHTML = ''; $('#offTopicZone').innerHTML = '';
+  $('#pContent').hidden = true; $('#pEmpty').hidden = false; $('#analyzing').hidden = true;
+  $('#pointCount').hidden = true; $('#srcCount').hidden = true; $('#askCount').hidden = true;
+  $('#srcList').innerHTML = '<div class="empty" style="padding:var(--s6) 0"><div class="empty__d">交卷后这里显示本次检索命中的讲义原文与出处。</div></div>';
+  renderAskChain(item);
+  const log = state.chat[item.id] || [];
+  $('#chatLog').innerHTML = log.map(m=>bub(m.role,m.text,m.cites)).join('');
+  $('#askCount').textContent = log.filter(m=>m.role==='me').length;
+  $('#askCount').hidden = !log.filter(m=>m.role==='me').length;
+  renderAskSug(item);
+  const btn = $('#submitBtn');
+  btn.className='btn btn--red btn--sm'; btn.disabled=false; btn.dataset.mode='submit';
+  btn.innerHTML = '交卷批改 <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8h10M9 4.2 12.8 8 9 11.8"/></svg>';
+  $('#composerInput').value = '';
+  $('#composerInput').style.height = '';
+  $('#dunnoTool').setAttribute('aria-pressed','false');
+  $('#composerHint').textContent = '先回忆，再对照 · 题库 ' + ITEMS.length + ' 题';
+  document.title = '面试舱 · ' + item.q.slice(0,28);
+  startTimer();
+  $('#stream').scrollTo({top:0,behavior:'auto'});
+}
+
+/* ---------- 提交 ---------- */
+function submitAnswer(){
+  if(submitted || !current) return;
+  const text = $('#composerInput').value.trim();
+  if(!text){
+    const ta = $('#composerInput');
+    ta.placeholder = '先写几句再交卷 —— 哪怕只记得一半也算数。';
+    ta.focus(); return;
+  }
+  submitted = true; clearInterval(timerId);
+  const btn = $('#submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="analyzing__spin" style="width:11px;height:11px;border-width:1.5px"></span>批改中…';
+  $('#answerZone').innerHTML = `
+    <div class="msg">
+      <div class="msg__meta"><span>我的默写</span><span>用时 ${fmt(elapsed)}</span></div>
+      <div class="mine">${esc(text)}</div>
+    </div>`;
+  $('#pEmpty').hidden = true; $('#pContent').hidden = true;
+  $('#analyzing').hidden = false;
+  $('#analyzingTxt').textContent = '正在检索讲义、逐条比对…';
+  if(window.matchMedia('(max-width:1199px)').matches) openPanel();
+
+  setTimeout(()=>{
+    const r = E.evaluate(INDEX, ITEMS, current, text);
+    recordAnswer(current, r.ratio);
+    $('#analyzing').hidden = true;
+    renderReview(r);
+    $('#pContent').hidden = false;
+    renderBoard(); renderChaps(); renderDue();
+    btn.disabled = false;
+    btn.className = 'btn btn--ink btn--sm'; btn.dataset.mode = 'next';
+    btn.innerHTML = '下一题 <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8h10M9 4.2 12.8 8 9 11.8"/></svg>';
+    $('#composerHint').textContent = r.ratio < DUE_MAX ? '已批改 · 这道进了待复习' : '已批改 · 掌握度已更新';
+  }, 620);
+}
+
+const PST = {hit:'这条答到了', partial:'这条答了一半', miss:'这条没答到'};
+
+function renderReview(r){
+  const pct = Math.round(r.ratio*100);
+  $('#covNum').textContent = r.hitN;
+  $('#covDen').textContent = `/ ${r.total} 要点`;
+  /* 逐格记分：一个要点一格。命中填墨，半答打斜纹，漏答留红框。 */
+  $('#covCells').innerHTML = r.points.map(p=>
+    `<span class="cell" data-s="${p.state}" title="要点 ${p.idx} · ${PST[p.state]} · ${Math.round(p.cov*100)}%"></span>`).join('');
+  const lvl = pct>=80 ? '默得很全' : pct>=55 ? '大致答上' : pct>=30 ? '差一半' : '得重默一遍';
+  $('#covGradeTxt').innerHTML = `${lvl}<s>${pct}%</s>`;
+  $('#statMiss').textContent = r.total - r.hitN;
+  $('#statTime').textContent = fmt(elapsed);
+  $('#statSeen').textContent = '第 ' + (state.seen[current.id]||1) + ' 次';
+
+  const bits = [`共 ${r.total} 个要点`, r.hitN?`答到 ${r.hitN} 条`:'主干没答上'];
+  if(r.partN) bits.push(`${r.partN} 条只答了一半`);
+  if(r.missN) bits.push(`${r.missN} 条没提到`);
+  const lead = [...new Set(r.points.filter(p=>p.state!=='hit').map(p=>p.missing[0]).filter(Boolean))].slice(0,3);
+  $('#covNote').textContent = bits.join('，') + '。'
+    + (lead.length ? `最该补：${lead.join('、')}。` : '（按术语覆盖度估算，换个说法讲同一件事可能被低估）');
+
+  $('#offTopicZone').innerHTML = r.offTopic ? `
+    <div style="margin-top:var(--s5);border:1px solid var(--red);background:var(--red-wash);padding:var(--s3) var(--s4)">
+      <div style="font-family:var(--serif);font-size:13.5px;font-weight:600;color:var(--red-ink);margin-bottom:5px">你答的像是另一道题</div>
+      <div style="font-size:12.5px;color:var(--ink-2);line-height:1.7">检索显示你的作答与「${esc(r.offTopic.item.q)}」更匹配（相关度 ${r.offTopic.rel.toFixed(2)}）。如果是答串了，抽那道重默一次。</div>
+      <button class="btn btn--sm" style="margin-top:10px" data-redraw="${r.offTopic.item.id}">抽这题</button>
+    </div>` : '';
+
+  $('#points').innerHTML = r.points.map(p=>`
+    <article class="point" data-state="${p.state}">
+      <header class="point__hd">
+        <span class="point__idx">${String(p.idx).padStart(2,'0')}</span>
+        <span class="pst" data-state="${p.state}">${PST[p.state]}</span>
+        <span class="point__cov">${Math.round(p.cov*100)}%</span>
+      </header>
+      <div class="point__bd">
+        <div>${p.state==='partial' ? wavy(p.text, p.missing.slice(0,3)) : esc(p.text)}</div>
+        ${(p.matched.length||p.missing.length) ? `<div class="chips">
+          ${p.matched.length?`<span class="chip chip--lead">答到</span>`+p.matched.map(t=>`<span class="chip chip--on">${esc(t)}</span>`).join(''):''}
+          ${p.missing.length?`<span class="chip chip--lead">没答到</span>`+p.missing.slice(0,3).map(t=>`<span class="chip chip--off">${esc(t)}</span>`).join(''):''}
+        </div>`:''}
+      </div>
+      <div class="point__ft">
+        <span class="src" data-gosrc="1" title="查看讲义原文">${esc((current.file||'').replace(/__/g,'/'))} · ${esc(current.sec)}</span>
+        ${p.state==='hit' ? '' : `<button class="btn btn--quiet btn--sm" data-due="${current.id}">进待复习</button>`}
+      </div>
+    </article>`).join('');
+  $('#pointHint').textContent = `答到 ${r.hitN} · 一半 ${r.partN} · 没答到 ${r.missN}`;
+  $('#pointCount').textContent = `${r.hitN}/${r.total}`;
+  $('#pointCount').hidden = false;
+
+  $('#srcList').innerHTML = r.sources.map(s=>`
+    <div class="srcitem">
+      <div class="srcitem__hd">
+        <span class="srcitem__file">${esc((s.file||'').replace(/__/g,'/'))} · ${esc(s.sec)}</span>
+        <span class="rel"><span class="rel__bar"><i style="width:${Math.round(s.rel*100)}%"></i></span><span class="rel__v">${s.rel.toFixed(2)}</span></span>
+      </div>
+      <div class="srcitem__bd">
+        <span class="srcitem__q">${esc(s.q)}</span>
+        ${esc(String(s.text).slice(String(s.q).length).trim().slice(0,700))}
+        ${s.id===current.id?'<div style="margin-top:10px;font-family:var(--mono);font-size:10px;color:var(--red-ink)">← 本题的讲义片段，要点由此拆出</div>':''}
+      </div></div>`).join('');
+  $('#srcCount').textContent = r.sources.length;
+  $('#srcCount').hidden = false;
+
+  const topMissing = r.points.filter(p=>p.state!=='hit').flatMap(p=>p.missing).slice(0,6);
+  $('#reviewZone').innerHTML = `
+    <div class="divider"><span>批改 · 用时 ${fmt(elapsed)}</span></div>
+    <div class="msg">
+      <div class="msg__meta"><span>要点覆盖 ${r.hitN}/${r.total}</span><span>刚刚</span></div>
+      <div class="md">
+        <h4>${r.total} 个要点里答到 ${r.hitN} 个${r.partN?`，另有 ${r.partN} 个只答了一半`:''}</h4>
+        ${r.hitN ? `<p>你已经讲到：${[...new Set(r.points.filter(p=>p.state==='hit').map(p=>p.matched[0]).filter(Boolean))].slice(0,5).map(t=>`<strong>${esc(t)}</strong>`).join('、')}。</p>`
+                 : '<p>这道题的主干还没答上来。先照着下面的要点过一遍，再默一次。</p>'}
+        ${topMissing.length?`<p>缺口是：${topMissing.map(t=>`<code>${esc(t)}</code>`).join(' ')}</p>`:''}
+        <blockquote><p>批改栏里是逐条对照，讲义原文里是这次检索命中的片段。</p></blockquote>
+      </div>
+    </div>
+    <div class="nextup" style="margin-top:var(--s5)">
+      <div class="nextup__hd"><span class="t">面试官接着会问</span><span class="hint">讲义原文序列 · 点一下直接抽</span></div>
+      ${r.followups.map((f,i)=>`
+        <button class="nq" data-redraw="${f.id}">
+          <span class="nq__n">${String(i+1).padStart(2,'0')}</span>
+          <span class="nq__bd"><span class="nq__q">${esc(f.q)}</span><span class="nq__why">${esc(f.chName)} · ${esc(f.why)}</span></span>
+          <span class="nq__go">抽这题</span></button>`).join('')}
+    </div>`;
+  $('#reviewZone').scrollIntoView({behavior:'smooth',block:'start'});
+  renderAskChain(current, r.followups);
+  renderAskSug(current, topMissing);
+}
+
+/* ---------- 追问 ---------- */
+function bub(role, text, cites){
+  if(role==='me') return `<div class="bub bub--me">${esc(text)}</div>`;
+  const cite = (cites&&cites.length) ? cites.map(c=>`
+    <div class="cite">
+      <div class="cite__t">${esc((c.file||'').replace(/__/g,'/'))} · ${esc(c.sec)} · 相关度 ${(c.rel||0).toFixed(2)}</div>
+      <div class="cite__x">${esc(String(c.text).slice(0,300))}${String(c.text).length>300?'…':''}</div>
+    </div>`).join('') : '';
+  return `<div class="bub bub--ai"><div>${esc(text)}</div>${cite}</div>`;
+}
+function askQuestion(q){
+  q = String(q||'').trim();
+  if(!q || !current) return;
+  const log = state.chat[current.id] = state.chat[current.id] || [];
+  log.push({role:'me', text:q});
+  $('#chatLog').innerHTML = log.map(m=>bub(m.role,m.text,m.cites)).join('');
+  const wait = document.createElement('div');
+  wait.className='bub bub--ai';
+  wait.innerHTML = '<span class="analyzing" style="padding:0"><span class="analyzing__spin"></span>正在翻讲义…</span>';
+  $('#chatLog').appendChild(wait);
+  $('#chatLog').scrollTop = $('#chatLog').scrollHeight;
+  $('#askSend').disabled = true;
+
+  setTimeout(()=>{
+    const hits = E.retrieve(INDEX, q, {k:3});
+    let text, cites = [];
+    if(!hits.length || hits[0].score < 1.2){
+      text = '讲义里没有直接相关的内容。换个说法，或者先去「逐条对照」把这道题的要点过一遍。';
+    } else if(hits[0].rel < 0.45){
+      text = `没有完全对应的段落，最接近的是下面 ${hits.filter(h=>h.rel>0.15).length} 段，供对照：`;
+      cites = hits.filter(h=>h.rel>0.15);
+    } else {
+      text = `讲义里有 ${hits.filter(h=>h.rel>0.3).length} 段直接相关。原文照引，不改写：`;
+      cites = hits.filter(h=>h.rel>0.15);
+    }
+    log.push({role:'ai', text, cites}); save();
+    $('#chatLog').innerHTML = log.map(m=>bub(m.role,m.text,m.cites)).join('');
+    $('#chatLog').scrollTop = $('#chatLog').scrollHeight;
+    $('#askSend').disabled = false;
+    const n = log.filter(m=>m.role==='me').length;
+    $('#askCount').textContent = n; $('#askCount').hidden = false;
+  }, 420);
+}
+function renderAskChain(item, fus){
+  const list = fus || E.followups(INDEX, ITEMS, item, {k:3});
+  $('#askChain').innerHTML = list.map((f,i)=>`
+    <button class="nq" data-redraw="${f.id}" style="border:1px solid var(--rule);margin-bottom:var(--s2)">
+      <span class="nq__n">${String(i+1).padStart(2,'0')}</span>
+      <span class="nq__bd"><span class="nq__q">${esc(f.q)}</span><span class="nq__why">${esc(f.chName)} · ${esc(f.why)}</span></span>
+      <span class="nq__go">抽这题</span></button>`).join('');
+}
+function renderAskSug(item, missing){
+  const kw = (missing||[]).slice(0,2).map(t=>`${t} 是什么？`);
+  const all = [...kw, '这题一般会追问什么？'].slice(0,3);
+  $('#askSug').innerHTML = all.map(s=>`<button data-ask="${esc(s)}">${esc(s)}</button>`).join('');
+}
+
+/* ---------- 交互 ---------- */
+$('#submitBtn').addEventListener('click', function(){
+  if(this.dataset.mode==='next'){ drawQuestion(); return }
+  submitAnswer();
+});
+$('#composerInput').addEventListener('keydown', e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==='Enter'){ e.preventDefault(); submitAnswer() }
+});
+$('#composerInput').addEventListener('input', function(){
+  this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,200)+'px';
+});
+$('#nextBtn').addEventListener('click', ()=>drawQuestion());
+$('#voiceTool').addEventListener('click', function(){
+  const on = this.getAttribute('aria-pressed')==='true';
+  this.setAttribute('aria-pressed', String(!on));
+  $('#composerHint').textContent = on ? '已停止录音' : '正在录音…说完点一下停止';
+});
+$('#codeTool').addEventListener('click', ()=>{
+  const ta = $('#composerInput');
+  const nl = ta.value && !ta.value.endsWith('\n') ? '\n' : '';
+  ta.value += `${nl}\`\`\`java\n// 在这里贴代码\n\`\`\`\n`;
+  ta.focus(); ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,200)+'px';
+});
+$('#dunnoTool').addEventListener('click', function(){
+  const on = this.getAttribute('aria-pressed')==='true';
+  this.setAttribute('aria-pressed', String(!on));
+  if(!on){
+    $('#composerInput').value = '这道我确实想不起来了，直接看答案。';
+    $('#composerHint').textContent = '标成「不会」—— 这道会优先回到待复习';
+  }
+});
+$('#askSend').addEventListener('click', ()=>{ const v=$('#askInput').value; $('#askInput').value=''; askQuestion(v) });
+$('#askInput').addEventListener('keydown', e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==='Enter'){ e.preventDefault(); $('#askSend').click() }
+});
+
+document.addEventListener('click', e=>{
+  const rd = e.target.closest('[data-redraw]');
+  if(rd){ drawQuestion(rd.dataset.redraw); closeDrawer(); return }
+  const dt = e.target.closest('[data-due]');
+  if(dt){
+    const it = ITEMS.find(x=>x.id===dt.dataset.due);
+    if(it){ state.answers[it.id] = Math.min(state.answers[it.id]!=null?state.answers[it.id]:0.8, 0.3); save(); }
+    renderDue(); renderChaps(); renderBoard();
+    dt.textContent = '已加入'; dt.disabled = true; return;
+  }
+  if(e.target.closest('[data-gosrc]')){ switchPane('src'); return }
+  const ask = e.target.closest('[data-ask]');
+  if(ask){ const q = ask.textContent.trim(); switchPane('ask'); $('#askInput').value=q; askQuestion(q); return }
+  const chap = e.target.closest('.chap');
+  if(chap){
+    const id = chap.dataset.chap, next = !selected.has(id);
+    if(next) selected.add(id); else selected.delete(id);
+    chap.setAttribute('aria-pressed', String(next));
+    chap.querySelector('.chk').setAttribute('data-on', next?'1':'0');
+  }
+});
+$('#scopeToggle').addEventListener('click', function(){
+  const allOn = ACTIVE.every(c=>selected.has(c.id));
+  selected.clear();
+  if(!allOn) ACTIVE.forEach(c=>selected.add(c.id));
+  renderChaps();
+  this.textContent = allOn ? '全选' : '全不选';
+});
+
+function switchPane(name){
+  $$('.ptab').forEach(x=>x.setAttribute('aria-selected', String(x.dataset.pane===name)));
+  $$('.panel__pane').forEach(p=>p.dataset.active = p.dataset.pane===name ? '1' : '0');
+}
+$$('.ptab').forEach(t=>t.addEventListener('click', ()=>switchPane(t.dataset.pane)));
+
+function closePops(){
+  $$('.pop').forEach(p=>p.dataset.open='0');
+  $$('.topbar__actions .icon-btn, #engineBtn').forEach(b=>b.setAttribute('aria-expanded','false'));
+  $('#lib').dataset.open='0'; $('#libBtn').setAttribute('aria-expanded','false');
+}
+function bindPop(btn, pop){
+  $(btn).addEventListener('click', e=>{
+    e.stopPropagation();
+    const open = $(pop).dataset.open==='1';
+    closePops(); $(pop).dataset.open = open?'0':'1';
+    $(btn).setAttribute('aria-expanded', String(!open));
+  });
+}
+bindPop('#setBtn','#setPop'); bindPop('#engineBtn','#engPop'); bindPop('#masteryBtn','#boardPop');
+$('#libBtn').addEventListener('click', e=>{
+  e.stopPropagation();
+  const open = $('#lib').dataset.open==='1';
+  closePops(); $('#lib').dataset.open = open?'0':'1';
+  $('#libBtn').setAttribute('aria-expanded', String(!open));
+});
+$('#masteryBtn').addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); e.currentTarget.click() } });
+$$('.pop').forEach(p=>p.addEventListener('click', e=>e.stopPropagation()));
+document.addEventListener('click', closePops);
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closePops(); closeDrawer() } });
+
+function openDrawer(){ renderDue(); $('#dueDrawer').dataset.open='1'; $('#scrim').dataset.open='1' }
+function closeDrawer(){ $('#dueDrawer').dataset.open='0'; $('#scrim').dataset.open='0' }
+$('#dueBtn').addEventListener('click', e=>{ e.stopPropagation(); openDrawer() });
+$('#dueBtn2').addEventListener('click', e=>{ e.stopPropagation(); openDrawer() });
+$('#statsBtn').addEventListener('click', e=>{ e.stopPropagation(); openDrawer() });
+$('#drawerClose').addEventListener('click', closeDrawer);
+$('#scrim').addEventListener('click', closeDrawer);
+$('#reviewBatch').addEventListener('click', ()=>{
+  if(!dueList().length){ $('#dueSummary').textContent = '还没有待复习的题'; return }
+  $$('.seg[data-seg="mode"] button').forEach(b=>b.setAttribute('aria-pressed', String(b.textContent.trim()==='待复习')));
+  closeDrawer(); drawQuestion();
+});
+
+$$('.seg').forEach(seg=>{
+  seg.addEventListener('click', e=>{
+    const b = e.target.closest('button'); if(!b) return;
+    [...seg.children].forEach(x=>x.setAttribute('aria-pressed', String(x===b)));
+    if(seg.dataset.seg==='mode' || seg.dataset.seg==='order') drawQuestion();
+  });
+});
+$$('.switch').forEach(sw=>{
+  sw.addEventListener('click', ()=>{
+    const on = sw.getAttribute('aria-checked')==='true';
+    sw.setAttribute('aria-checked', String(!on));
+    if(sw.id==='themeSwitch') document.documentElement.dataset.theme = !on?'night':'day';
+  });
+});
+$('#resetBtn').addEventListener('click', ()=>{
+  state = blank(); save();
+  renderBoard(); renderChaps(); renderDue(); drawQuestion();
+  $('#composerHint').textContent = '记录已清空';
+});
+$('#importBtn').addEventListener('click', ()=>{
+  $('#composerHint').textContent = '把讲义 md / pdf / docx 拖进来，或直接粘贴，会自动切成问答对';
+});
+
+function openRail(){ $('#rail').dataset.open='1'; $('#scrim').dataset.open='1'; $$('.mtab').forEach(m=>m.setAttribute('aria-selected',String(m.dataset.view==='rail'))) }
+function closeRail(){ $('#rail').dataset.open='0'; if($('#panel').dataset.open!=='1') $('#scrim').dataset.open='0' }
+function openPanel(){ $('#panel').dataset.open='1'; $('#panelClose').hidden=false; $('#scrim').dataset.open='1'; $$('.mtab').forEach(m=>m.setAttribute('aria-selected',String(m.dataset.view==='panel'))) }
+function closePanel(){ $('#panel').dataset.open='0'; $('#panelClose').hidden=true; if($('#rail').dataset.open!=='1') $('#scrim').dataset.open='0' }
+$('#railClose').addEventListener('click', closeRail);
+$('#panelClose').addEventListener('click', closePanel);
+$('#railToggle').addEventListener('click', openRail);
+$$('.mtab').forEach(m=>{
+  m.addEventListener('click', ()=>{
+    const v = m.dataset.view;
+    closeRail(); closePanel();
+    $$('.mtab').forEach(x=>x.setAttribute('aria-selected',String(x===m)));
+    if(v==='rail') openRail();
+    if(v==='panel') openPanel();
+  });
+});
+function syncRail(){
+  const narrow = window.matchMedia('(max-width:1199px)').matches;
+  $('#railToggle').style.display = narrow ? 'inline-flex' : 'none';
+  if(!narrow){ closeRail(); closePanel() }
+}
+syncRail();
+window.addEventListener('resize', syncRail);
+
+function renderEngine(){
+  $('#engList').innerHTML = `
+    <div class="engrow" data-on="1">
+      <span class="engrow__ico"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2.5" y="2.5" width="11" height="11"/><path d="M5.5 6.5h5M5.5 9.5h3"/></svg></span>
+      <span class="engrow__bd">
+        <span class="engrow__t">本地引擎 <em>运行中 · 建索引 ${BUILD_MS}ms</em></span>
+        <span class="engrow__d">BM25 检索 ${C.chunks.length} 个讲义片段、把参考答案拆成要点、按术语覆盖度逐条判定。全程在浏览器内完成，作答不上传。</span>
+      </span></div>
+    <div class="engrow" data-on="0">
+      <span class="engrow__ico"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.4 13.6 12.4H2.4L8 2.4Z"/><path d="M8 6.4v2.4M8 10.8v.1"/></svg></span>
+      <span class="engrow__bd">
+        <span class="engrow__t">云端大模型 <em>未启用</em></span>
+        <span class="engrow__d">开通云服务后可切到真大模型：由模型生成批改措辞、口诀与开放式追问；检索与出处仍走本地，界面结构不变。</span>
+      </span></div>`;
+  $('#engSub').textContent = `${ITEMS.length} 题 · ${C.chunks.length} 片段`;
+}
+
+renderLib(); renderBoard(); renderChaps(); renderDue(); renderEngine();
+drawQuestion();
+window.__ml = { get state(){return state}, drawQuestion, submitAnswer, askQuestion, dueList,
+                INDEX, ITEMS, switchPane,
+                reset(){ state = blank(); save(); renderBoard(); renderChaps(); renderDue() } };
+})();
+</script>
+</body>
+</html>

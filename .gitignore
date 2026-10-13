@@ -1,0 +1,20 @@
+# 语料原文：来自第三方讲义（github.com/whyza/itcast_interview），版权属原作者，不入库
+.corpus-raw/
+
+# corpus.js 由上述讲义切分而来，同属衍生内容，不入库。
+# 复现方式：准备好 .corpus-raw/ 后运行 python build-corpus.py
+corpus.js
+
+# 验证截图（2.5MB），本地产物，不入库
+shots/
+
+# 本地记忆与工具目录
+.workbuddy/
+
+# 历史版本留档
+.archive/
+
+# 依赖与系统文件
+node_modules/
+.DS_Store
+Thumbs.db
