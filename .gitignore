@@ -10,7 +10,9 @@ shots/
 
 # 本地记忆与工具目录
 .workbuddy/
-.claude/
+# Claude Code 本地配置（launch.json 等）；skills 要入库，只忽略根散文件
+.claude/*
+!.claude/skills/
 
 # 历史版本留档
 .archive/
