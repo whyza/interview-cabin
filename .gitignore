@@ -1,5 +1,8 @@
-# 语料原文：来自第三方讲义（github.com/whyza/itcast_interview），版权属原作者，不入库
-.corpus-raw/
+# 语料原文仓库整体忽略（含 PPT/PDF/简历等大体积二进制），只入库切分所需的 9 份讲义 md
+# 2026-10-14 经仓库所有者决策：讲义 md 与 corpus.js 均强制入库（git add -f），
+# 换机后免构建直接可用。若仓库转公开商用，仍需先确认讲义授权或替换语料（RK-04）。
+.corpus-raw/*
+!.corpus-raw/*.md
 
 # corpus.js 原也被 ignore；2026-10-14 经仓库所有者决策强制入库（git add -f），
 # 以便换机后免构建直接可用。若仓库转公开商用，仍需先确认讲义授权或替换语料（RK-04）。
