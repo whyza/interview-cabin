@@ -10,6 +10,7 @@ shots/
 
 # 本地记忆与工具目录
 .workbuddy/
+.claude/
 
 # 历史版本留档
 .archive/
