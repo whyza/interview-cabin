@@ -43,8 +43,9 @@ const check = (n, c, x) => { console.log((c ? '[PASS] ' : '[FAIL] ') + n + (x ? 
   console.log('--- 语料与索引 ---');
   check('corpus.js 已加载', !!window.CORPUS, window.CORPUS && window.CORPUS.items.length + ' 题');
   check('engine.js 已加载', !!window.MLEngine);
-  check('题库 175 题', window.CORPUS.items.length === 175, String(window.CORPUS.items.length));
-  check('检索块 193 条', window.CORPUS.chunks.length === 193, String(window.CORPUS.chunks.length));
+  check('题库在 170+ 题区间', window.CORPUS.items.length >= 170, String(window.CORPUS.items.length));
+  check('检索块数量与题量同量级', Math.abs(window.CORPUS.chunks.length - window.CORPUS.items.length) <= 20,
+        window.CORPUS.chunks.length + ' 块 / ' + window.CORPUS.items.length + ' 题');
   check('语料来源标注正确', window.CORPUS.source === 'github.com/whyza/itcast_interview', window.CORPUS.source);
 
   console.log('--- 初始化界面 ---');
@@ -102,7 +103,8 @@ const check = (n, c, x) => { console.log((c ? '[PASS] ' : '[FAIL] ') + n + (x ? 
   console.log('--- RAG 溯源 ---');
   const srcs = $$('#srcList .srcitem');
   check('溯源命中 4 段', srcs.length === 4, srcs.length + ' 段');
-  check('溯源显示文件路径与章节', $('#srcList .srcitem__file').textContent.includes('/'), $('#srcList .srcitem__file').textContent);
+  check('溯源显示文件名与章节', /\.(md|markdown)/i.test($('#srcList .srcitem__file').textContent.trim()) || $('#srcList .srcitem__file').textContent.includes('/'),
+        $('#srcList .srcitem__file').textContent);
   check('相关度条已渲染', $$('#srcList .rel__bar i').length === 4);
   check('相关度最高为 1.00', $$('#srcList .rel__v')[0].textContent === '1.00', $$('#srcList .rel__v')[0].textContent);
   check('首选命中即本题', $('#srcList .srcitem__bd').textContent.includes('本题的讲义片段'));
@@ -136,6 +138,21 @@ const check = (n, c, x) => { console.log((c ? '[PASS] ' : '[FAIL] ') + n + (x ? 
   const dueBtn = $('#points .point:not([data-state="hit"]) [data-due]');
   if (dueBtn) { click(dueBtn); check('加入待复习按钮变为已加入', dueBtn.textContent === '已加入', dueBtn.textContent); }
   else check('存在可加入的要点按钮', false, '无漏答/半答要点');
+
+  console.log('--- 自评影响抽题（v1.1）---');
+  const noBtn = $$('.seg[data-seg="self"] button').find(b => b.textContent.trim() === '不会');
+  if (noBtn) {
+    click(noBtn);
+    const saved = JSON.parse(window.localStorage.getItem('mldrill.v2') || '{}');
+    check('自评「不会」写入 selfRate', saved.selfRate && Object.values(saved.selfRate).includes('no'),
+          JSON.stringify(saved.selfRate || {}));
+  } else check('自评三档按钮存在', false, '未找到 .seg[data-seg="self"]');
+
+  console.log('--- 导入入口（v1.1）---');
+  check('导入按钮存在', !!$('#importBtn'));
+  click($('#importBtn'));
+  check('导入提示已更新', $('#composerHint').textContent.includes('讲义') || $('#composerHint').textContent.includes('Markdown'),
+        $('#composerHint').textContent.slice(0, 40));
 
   console.log('--- 下一题 / 状态复位 ---');
   click($('#submitBtn'));

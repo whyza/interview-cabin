@@ -675,10 +675,6 @@ p{margin:0} ul,ol{margin:0;padding:0}
               <textarea class="composer__input" id="composerInput" rows="3" placeholder="用自己的话默一遍。想到几句写几句，答不全没关系 —— 先回忆，再对照。"></textarea>
             </div>
             <div class="composer__tools">
-              <button class="tool" id="voiceTool" aria-pressed="false">
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="4" height="7" rx="2"/><path d="M4 8a4 4 0 0 0 8 0M8 12v1.8"/></svg>
-                <span class="tool__t">口述</span>
-              </button>
               <button class="tool" id="codeTool">
                 <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 5 2.8 8l2.7 3M10.5 5l2.7 3-2.7 3"/></svg>
                 <span class="tool__t">贴代码</span>
@@ -813,6 +809,7 @@ p{margin:0} ul,ol{margin:0;padding:0}
   <div class="drawer__bd">
     <div class="filters">
       <button class="btn btn--red btn--sm" id="reviewBatch">开始复习这一批</button>
+      <button class="btn btn--sm" id="exportBtn" style="margin-left:auto">导出错题</button>
     </div>
     <div id="dueList"></div>
   </div>
@@ -833,15 +830,61 @@ const $$ = s=>[...document.querySelectorAll(s)];
 const C = window.CORPUS, E = window.MLEngine;
 const STORE_KEY = 'mldrill.v2';
 
-const blank = () => ({ answers:{}, chapters:{}, seen:{}, chat:{} });
+const blank = () => ({ answers:{}, chapters:{}, seen:{}, chat:{}, selfRate:{}, settings:{} });
 let state = blank();
 try { const raw = localStorage.getItem(STORE_KEY); if (raw) state = Object.assign(blank(), JSON.parse(raw)); } catch(e){}
+
+/* 设置项（严格度 / 计时 / 自动下一题）：改判定阈值在下次作答生效，避免已呈现的结果被悄悄改写 */
+const STRICT_LEVELS = { '宽松':'lenient', '标准':'standard', '严格':'strict' };
+const SETTING_DEFAULTS = { order:'随机', strict:'标准', timer:true, autoNext:false };
+let settings = Object.assign({}, SETTING_DEFAULTS, state.settings || {});
+if (window.MLEngine && window.MLEngine.setStrictness) window.MLEngine.setStrictness(STRICT_LEVELS[settings.strict] || 'standard');
+function saveSettings(){
+  state.settings = settings;
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+}
 function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){} }
 
+/* ---------- 埋点（PRD §10.2）：只落本机 localStorage，不发任何网络请求 ----------
+   存最近 2000 条，超出丢最旧的；「清空全部记录」时一并清掉。 */
+const EVENTS_KEY = 'mldrill.events.v1';
+function track(name, data){
+  try {
+    const list = JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]');
+    list.push({ ev: name, t: Date.now(), ...data });
+    localStorage.setItem(EVENTS_KEY, JSON.stringify(list.slice(-2000)));
+  } catch(e){}
+}
+function exportEvents(){
+  try { return JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]'); } catch(e){ return [] }
+}
+
+/* ---------- 导入讲义（FR-01 在线部分）：前端解析 md，与内置语料合并 ----------
+   合并结果存 localStorage（题目/片段上限各 3000），刷新后仍在；索引随合并语料重建。 */
+const IMPORT_KEY = 'mldrill.import.v1';
+function loadImported(){
+  try { const raw = localStorage.getItem(IMPORT_KEY); if (raw) return JSON.parse(raw); } catch(e){}
+  return { items: [], chunks: [] };
+}
+function saveImported(imp){
+  try { localStorage.setItem(IMPORT_KEY, JSON.stringify({
+    items: imp.items.slice(0,3000), chunks: imp.chunks.slice(0,3000),
+  })); } catch(e){}
+}
+/* 按题干/文本前 60 字去重后合并，避免同一份讲义重复导入产生双份题目 */
+function dedupeMerge(baseItems, baseChunks, parsed){
+  const items = baseItems.slice(), chunks = baseChunks.slice();
+  const seen = new Set(items.map(x => x.q.slice(0,60)));
+  const chunkSeen = new Set(chunks.map(x => x.text.slice(0,60)));
+  parsed.items.forEach(it => { const k = it.q.slice(0,60); if(!seen.has(k)){ seen.add(k); items.push(it) } });
+  parsed.chunks.forEach(c => { const k = c.text.slice(0,60); if(!chunkSeen.has(k)){ chunkSeen.add(k); chunks.push(c) } });
+  return { items, chunks };
+}
+const imported0 = loadImported();
+let ITEMS = C.items.concat(imported0.items);
+let INDEX = null;            // 紧接着在语料就绪后构建
 const t0 = performance.now();
-const INDEX = E.buildIndex(C.chunks);
 const BUILD_MS = Math.max(1, Math.round(performance.now() - t0));
-const ITEMS = C.items;
 const ACTIVE = C.chapters.filter(c => c.count > 0);
 const selected = new Set(ACTIVE.map(c => c.id));
 const DUE_MAX = 0.6;
@@ -965,8 +1008,11 @@ function renderDue(){
 
 /* ---------- 抽题 ---------- */
 let current = null, submitted = false, elapsed = 0, timerId = null;
-function startTimer(){ clearInterval(timerId); elapsed=0; $('#timerVal').textContent='00:00';
-  timerId=setInterval(()=>{elapsed++;$('#timerVal').textContent=fmt(elapsed)},1000) }
+function startTimer(){
+  clearInterval(timerId); elapsed=0; $('#timerVal').textContent='00:00';
+  if(!settings.timer) return;   // 关闭计时时静默不走表，用时记为 0
+  timerId=setInterval(()=>{elapsed++;$('#timerVal').textContent=fmt(elapsed)},1000)
+}
 
 function drawQuestion(forceId){
   const pool = ITEMS.filter(it => selected.has(it.ch));
@@ -981,15 +1027,20 @@ function drawQuestion(forceId){
     const ord = pressed('order');
     if(ord==='未答过'){ const fresh = cands.filter(it=>state.answers[it.id]==null); if(fresh.length) cands = fresh; }
     if(ord==='薄弱优先' || pressed('mode')==='待复习'){
+      /* 排序权重 = 覆盖率 − 自评偏移：标「不会」的题排在最前（FR-26） */
+      const SELF_BIAS = { no:-0.3, review:0, know:0.2 };
       cands = [...cands].sort((a,b)=>{
-        const ra = state.answers[a.id], rb = state.answers[b.id];
-        return (ra==null?-1:ra) - (rb==null?-1:rb);
+        const wa = (state.answers[a.id]==null?-1:state.answers[a.id]) + (SELF_BIAS[state.selfRate[a.id]]||0);
+        const wb = (state.answers[b.id]==null?-1:state.answers[b.id]) + (SELF_BIAS[state.selfRate[b.id]]||0);
+        return wa - wb;
       });
       item = cands[0];
     } else item = cands[Math.floor(Math.random()*cands.length)];
   }
   if(!item) return;
   current = item; submitted = false;
+  track('draw', { qid: item.id, ch: item.ch,
+                  src: forceId ? 'redraw' : (pressed('mode')==='待复习' ? 'review' : 'random') });
   $('#qTag').className = 'tag t--' + item.ch;
   $('#qTag').innerHTML = `<span class="tag__dot"></span>${esc(item.chName)}`;
   $('#qSec').textContent = item.sec.length>24 ? item.sec.slice(0,24)+'…' : item.sec;
@@ -1030,6 +1081,7 @@ function submitAnswer(){
     ta.focus(); return;
   }
   submitted = true; clearInterval(timerId);
+  track('submit', { qid: current.id, chars: text.length, elapsed });
   const btn = $('#submitBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="analyzing__spin" style="width:11px;height:11px;border-width:1.5px"></span>批改中…';
@@ -1046,6 +1098,8 @@ function submitAnswer(){
   setTimeout(()=>{
     const r = E.evaluate(INDEX, ITEMS, current, text);
     recordAnswer(current, r.ratio);
+    track('grade', { qid: current.id, total: r.total, hitN: r.hitN, partN: r.partN, missN: r.missN,
+                     ratio: r.ratio, offTopic: !!r.offTopic });
     $('#analyzing').hidden = true;
     renderReview(r);
     $('#pContent').hidden = false;
@@ -1054,6 +1108,9 @@ function submitAnswer(){
     btn.className = 'btn btn--ink btn--sm'; btn.dataset.mode = 'next';
     btn.innerHTML = '下一题 <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8h10M9 4.2 12.8 8 9 11.8"/></svg>';
     $('#composerHint').textContent = r.ratio < DUE_MAX ? '已批改 · 这道进了待复习' : '已批改 · 掌握度已更新';
+    if(r.ratio < DUE_MAX) track('due_add', { qid: current.id, src: 'auto' });
+    /* 答完自动下一题：留 1.5s 让用户看到记分格再走 */
+    if(settings.autoNext) setTimeout(()=>{ if(submitted) drawQuestion() }, 1500);
   }, 620);
 }
 
@@ -1185,6 +1242,7 @@ function askQuestion(q){
       cites = hits.filter(h=>h.rel>0.15);
     }
     log.push({role:'ai', text, cites}); save();
+    track('ask', { qid: current.id, hit: cites.length > 0 });
     $('#chatLog').innerHTML = log.map(m=>bub(m.role,m.text,m.cites)).join('');
     $('#chatLog').scrollTop = $('#chatLog').scrollHeight;
     $('#askSend').disabled = false;
@@ -1218,11 +1276,6 @@ $('#composerInput').addEventListener('input', function(){
   this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,200)+'px';
 });
 $('#nextBtn').addEventListener('click', ()=>drawQuestion());
-$('#voiceTool').addEventListener('click', function(){
-  const on = this.getAttribute('aria-pressed')==='true';
-  this.setAttribute('aria-pressed', String(!on));
-  $('#composerHint').textContent = on ? '已停止录音' : '正在录音…说完点一下停止';
-});
 $('#codeTool').addEventListener('click', ()=>{
   const ta = $('#composerInput');
   const nl = ta.value && !ta.value.endsWith('\n') ? '\n' : '';
@@ -1249,6 +1302,7 @@ document.addEventListener('click', e=>{
   if(dt){
     const it = ITEMS.find(x=>x.id===dt.dataset.due);
     if(it){ state.answers[it.id] = Math.min(state.answers[it.id]!=null?state.answers[it.id]:0.8, 0.3); save(); }
+    track('due_add', { qid: dt.dataset.due, src: 'manual' });
     renderDue(); renderChaps(); renderBoard();
     dt.textContent = '已加入'; dt.disabled = true; return;
   }
@@ -1302,6 +1356,29 @@ $$('.pop').forEach(p=>p.addEventListener('click', e=>e.stopPropagation()));
 document.addEventListener('click', closePops);
 document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closePops(); closeDrawer() } });
 
+/* ---------- 错题导出：把覆盖率 <60% 的题导成 Markdown，含缺口术语与讲义出处 ---------- */
+$('#exportBtn').addEventListener('click', ()=>{
+  const list = dueList();
+  if(!list.length){ $('#dueSummary').textContent = '还没有待复习的题，先答几道'; return }
+  const lines = [`# 面试舱错题本`, '', `> 导出时间 ${new Date().toLocaleString('zh-CN')} · 共 ${list.length} 题 · 按覆盖率升序`, ''];
+  list.forEach(({it, r, seen}, i) => {
+    lines.push(`## ${i+1}. ${it.q}`,
+      '',
+      `- 篇章：${it.chName}（${it.sec}）`,
+      `- 最近覆盖率：**${Math.round(r*100)}%** · 遇见 ${seen} 次 · 出处：${String(it.file||'').replace(/__/g,'/')}`,
+      '',
+      '**参考答案**', '',
+      it.a,
+      '');
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `面试舱错题本-${new Date().toISOString().slice(0,10)}.md`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  $('#dueSummary').textContent = `已导出 ${list.length} 题`;
+});
 function openDrawer(){ renderDue(); $('#dueDrawer').dataset.open='1'; $('#scrim').dataset.open='1' }
 function closeDrawer(){ $('#dueDrawer').dataset.open='0'; $('#scrim').dataset.open='0' }
 $('#dueBtn').addEventListener('click', e=>{ e.stopPropagation(); openDrawer() });
@@ -1310,7 +1387,9 @@ $('#statsBtn').addEventListener('click', e=>{ e.stopPropagation(); openDrawer() 
 $('#drawerClose').addEventListener('click', closeDrawer);
 $('#scrim').addEventListener('click', closeDrawer);
 $('#reviewBatch').addEventListener('click', ()=>{
-  if(!dueList().length){ $('#dueSummary').textContent = '还没有待复习的题'; return }
+  const list = dueList();
+  track('review_batch', { queue: list.length });
+  if(!list.length){ $('#dueSummary').textContent = '还没有待复习的题'; return }
   $$('.seg[data-seg="mode"] button').forEach(b=>b.setAttribute('aria-pressed', String(b.textContent.trim()==='待复习')));
   closeDrawer(); drawQuestion();
 });
@@ -1320,6 +1399,12 @@ $$('.seg').forEach(seg=>{
     const b = e.target.closest('button'); if(!b) return;
     [...seg.children].forEach(x=>x.setAttribute('aria-pressed', String(x===b)));
     if(seg.dataset.seg==='mode' || seg.dataset.seg==='order') drawQuestion();
+    /* 自评三档影响薄弱优先的抽题概率（FR-26）：不会优先，会了靠后 */
+    if(seg.dataset.seg==='self' && current){
+      const v = b.textContent.trim();
+      state.selfRate[current.id] = ({'会了':'know','还得看':'review','不会':'no'})[v] || 'review';
+      save();
+    }
   });
 });
 $$('.switch').forEach(sw=>{
@@ -1327,16 +1412,79 @@ $$('.switch').forEach(sw=>{
     const on = sw.getAttribute('aria-checked')==='true';
     sw.setAttribute('aria-checked', String(!on));
     if(sw.id==='themeSwitch') document.documentElement.dataset.theme = !on?'night':'day';
+    if(sw.closest('#setPop')){ saveSettings(); }
   });
 });
+
+/* ---------- 设置项回显与接线 ---------- */
+function syncSettingsUI(){
+  $$('.seg[data-seg="order"] button').forEach(b=>b.setAttribute('aria-pressed', String(b.textContent.trim()===settings.order)));
+  $$('.seg[data-seg="strict"] button').forEach(b=>b.setAttribute('aria-pressed', String(b.textContent.trim()===settings.strict)));
+  const timerSw = $('#setPop .field:nth-of-type(3) .switch');
+  const autoSw = $('#setPop .field:nth-of-type(4) .switch');
+  if(timerSw) timerSw.setAttribute('aria-checked', String(!!settings.timer));
+  if(autoSw) autoSw.setAttribute('aria-checked', String(!!settings.autoNext));
+}
+$$('.seg[data-seg="strict"] button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    settings.strict = b.textContent.trim();
+    if(window.MLEngine.setStrictness) window.MLEngine.setStrictness(STRICT_LEVELS[settings.strict]);
+    saveSettings();
+    $('#composerHint').textContent = `判定严格度：${settings.strict} —— 下次交卷生效`;
+  });
+});
+syncSettingsUI();
 $('#resetBtn').addEventListener('click', ()=>{
   state = blank(); save();
+  try{ localStorage.removeItem(EVENTS_KEY) }catch(e){}
   renderBoard(); renderChaps(); renderDue(); drawQuestion();
   $('#composerHint').textContent = '记录已清空';
 });
+/* 语料就绪：合并导入语料后建索引 */
+{
+  const ALL_CHUNKS0 = C.chunks.concat(imported0.chunks);
+  ITEMS = C.items.concat(imported0.items);
+  INDEX = E.buildIndex(ALL_CHUNKS0);
+}
 $('#importBtn').addEventListener('click', ()=>{
-  $('#composerHint').textContent = '把讲义 md / pdf / docx 拖进来，或直接粘贴，会自动切成问答对';
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.md,text/markdown'; input.multiple = true;
+  input.style.display = 'none';
+  input.addEventListener('change', () => { if(input.files.length) handleFiles(input.files); input.remove(); });
+  document.body.appendChild(input);
+  input.click();
+  $('#composerHint').textContent = '选择讲义 Markdown 文件（02~10 前缀按篇章归类，其余做检索语料）';
 });
+function handleFiles(files){
+  const makeId = () => 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  const mdFiles = [...files].filter(f => /\.md$/i.test(f.name));
+  if(!mdFiles.length){
+    $('#composerHint').textContent = '只支持 Markdown（.md）讲义文件，按「面试官：/候选人：」格式切分';
+    return;
+  }
+  let done = 0, addedItems = 0;
+  mdFiles.forEach(f => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const parsed = E.parseLecture(f.name, String(reader.result||''), makeId);
+      const merged = dedupeMerge(ITEMS, INDEX.chunks, parsed);
+      addedItems += merged.items.length - ITEMS.length;
+      ITEMS = merged.items;
+      INDEX = E.buildIndex(merged.chunks);
+      done++;
+      if(done === mdFiles.length){
+        saveImported({ items: ITEMS.filter(x => !C.items.includes(x)), chunks: INDEX.chunks.filter(x => !C.chunks.includes(x)) });
+        ACTIVE.forEach(c => { c.count = ITEMS.filter(it=>it.ch===c.id).length });
+        const knownChaps = new Set(C.chapters.map(c=>c.id));
+        ITEMS.forEach(it => { if(!knownChaps.has(it.ch)) selected.add(it.ch) });
+        renderLib(); renderBoard(); renderChaps(); renderDue(); renderEngine();
+        $('#composerHint').textContent = `导入完成：新增 ${addedItems} 题，题库共 ${ITEMS.length} 题`;
+        drawQuestion();
+      }
+    };
+    reader.readAsText(f, 'utf-8');
+  });
+}
 
 function openRail(){ $('#rail').dataset.open='1'; $('#scrim').dataset.open='1'; $$('.mtab').forEach(m=>m.setAttribute('aria-selected',String(m.dataset.view==='rail'))) }
 function closeRail(){ $('#rail').dataset.open='0'; if($('#panel').dataset.open!=='1') $('#scrim').dataset.open='0' }

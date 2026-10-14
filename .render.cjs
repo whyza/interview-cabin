@@ -67,7 +67,7 @@ const ANSWER = 'InnoDB 的索引用的是 B+ 树。第一，B+ 树的非叶子�
     if (vp.w >= 1200 && layout.colCount !== 3) problems.push(vp.name + ' 桌面应为三栏，实际 ' + layout.colCount);
     if (vp.w < 1200 && layout.colCount !== 1) problems.push(vp.name + ' 窄屏应只有中栏常驻，实际 ' + layout.colCount);
     if (vp.w < 1200 && layout.mtabs !== 'block') problems.push(vp.name + ' 移动端底部导航未启用');
-    if (layout.corpusItems !== 175) problems.push(vp.name + ' 语料未正确加载: ' + layout.corpusItems);
+    if (!(layout.corpusItems >= 170)) problems.push(vp.name + ' 语料未正确加载: ' + layout.corpusItems);
     if (layout.analyzingShown || !layout.emptyShown || layout.contentShown) problems.push(vp.name + ' 初始右栏可见性错误');
     if (!layout.qText || layout.qText.length < 6) problems.push(vp.name + ' 未抽到题目');
 

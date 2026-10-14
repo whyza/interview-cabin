@@ -253,9 +253,31 @@ function splitPoints(answer, index, question) {
     return picked;
   }
 
-  /* ---------- 覆盖度评分 ---------- */
-  const HIT = 0.50, PART = 0.25;
+  /* ---------- 参数外置：随批改结果落盘，保证历史结果可复现 ---------- */
+  const ENGINE_PARAMS = {
+    version: '1.1.0',
+    // 三档严格度：判定术语覆盖到多少算「答到 / 答了一半」
+    strictness: {
+      lenient: { hit: 0.42, part: 0.20 },
+      standard: { hit: 0.50, part: 0.25 },
+      strict: { hit: 0.58, part: 0.32 },
+    },
+    bm25: { k1: 1.4, b: 0.72, recall: 4 },
+    offTopic: { minChars: 24, ratio: 1.35, minScore: 2.4 },
+    terms: { maxPerPoint: 6, dfMin: 2 },
+  };
+  let hitThreshold = ENGINE_PARAMS.strictness.standard.hit;
+  let partThreshold = ENGINE_PARAMS.strictness.standard.part;
 
+  /** 切换判定严格度，在下次作答时生效（避免已呈现的结果被悄悄改写） */
+  function setStrictness(level) {
+    const s = ENGINE_PARAMS.strictness[level];
+    if (!s) return false;
+    hitThreshold = s.hit; partThreshold = s.part;
+    return true;
+  }
+
+  /* ---------- 覆盖度评分 ---------- */
   const norm = s => String(s || '').replace(/\s+/g, '').toLowerCase();
 
   function grade(answerText, points, index) {
@@ -266,7 +288,12 @@ function splitPoints(answer, index, question) {
       const matched = [], missing = [];
       let w = 0, tot = 0;
       for (const t of terms) {
-        const idf = index ? (index.idf.get(t) || 4) : 4;
+        // 3 字以上的 CJK n-gram 术语记录在 gidf 表，bigram / ASCII / 混合术语在 idf 表，
+        // 查错表会拿到 undefined 并回退成统一权重，长术语的区分度就丢了
+        const idf = index
+          ? (t.length >= 3 && !/[a-z0-9]/.test(t) ? (index.gidf.get(t) || index.idf.get(t) || 4)
+                                             : (index.idf.get(t) || 4))
+          : 4;
         const weight = idf * Math.pow(t.length, 0.35);   // 长术语更值钱
         tot += weight;
         if (mine.indexOf(t) >= 0) { w += weight; matched.push(t); } else missing.push(t);
@@ -274,7 +301,7 @@ function splitPoints(answer, index, question) {
       const cov = tot ? w / tot : 0;
       return {
         idx: p.idx, text: p.text, terms, matched, missing, cov,
-        state: cov >= HIT ? 'hit' : cov >= PART ? 'partial' : 'miss',
+        state: cov >= hitThreshold ? 'hit' : cov >= partThreshold ? 'partial' : 'miss',
       };
     });
     const hitN = out.filter(x => x.state === 'hit').length;
@@ -288,14 +315,14 @@ function splitPoints(answer, index, question) {
   /* ---------- 答偏检测：作答其实命中了另一道题 ---------- */
   function detectOffTopic(index, items, item, answerText) {
     const mine = norm(answerText);
-    if (mine.length < 24) return null;              // 太短不判
+    if (mine.length < ENGINE_PARAMS.offTopic.minChars) return null;              // 太短不判
     const probe = retrieve(index, answerText, { k: 4 });
     if (!probe.length) return null;
     const top = probe[0];
     if (top.id === item.id) return null;
     const self = probe.find(x => x.id === item.id);
     const selfScore = self ? self.score : 0;
-    if (top.score > selfScore * 1.35 && top.score > 2.4) {
+    if (top.score > selfScore * ENGINE_PARAMS.offTopic.ratio && top.score > ENGINE_PARAMS.offTopic.minScore) {
       const it = items.find(x => x.id === top.id);
       return it ? { item: it, rel: top.rel, score: top.score } : null;
     }
@@ -335,9 +362,118 @@ function splitPoints(answer, index, question) {
       points: g.points, hitN: g.hitN, partN: g.partN, missN: g.missN,
       total: g.total, ratio: g.ratio, offTopic,
       followups: followups(index, items, item, { k: 3 }),
+      // 参数快照随结果落盘：同样的作答 + 同样的参数 = 可复现的历史判定
+      params: { engineVersion: ENGINE_PARAMS.version, hit: hitThreshold, part: partThreshold,
+                bm25: ENGINE_PARAMS.bm25, corpusChunkN: index.chunks.length },
       note: '本地引擎按术语覆盖度估算：表述与参考差异较大时可能低估，数字仅供自查参考。',
     };
   }
 
-  global.MLEngine = { tokenize, grams, buildIndex, retrieve, splitPoints, keyTerms, grade, detectOffTopic, followups, evaluate };
+  /* ---------- 讲义导入：把「面试官：/候选人：」格式的 Markdown 切成问答对 ----------
+     与 build-corpus.py 同一套规则的前端实现：
+       · 按文件名前两位（02~10）归入九个篇章，其余文件整篇当检索语料不产题
+       · 每个问答对产 1 题 + 1 检索块；无问答标记的文件按标题/空行切段，只做检索语料
+       · 噪音过滤：题干 <6 字、参考答案 <40 字、备注/括号开头的假题目剔除 */
+  const CHAP_TABLE = [
+    ['01', 'prep',   '准备篇'], ['02', 'redis', 'Redis'], ['03', 'db', '数据库'],
+    ['04', 'spring', '框架'],   ['05', 'micro', '微服务'], ['06', 'mq', '消息中间件'],
+    ['07', 'coll',   '常见集合篇'], ['08', 'conc', '并发编程'], ['09', 'jvm', 'JVM虚拟机'],
+    ['10', 'biz',    '企业场景'],
+  ];
+  const BY_PREFIX = {};
+  CHAP_TABLE.forEach(c => { BY_PREFIX[c[0]] = { ch: c[1], chName: c[2] }; });
+
+  function mdClean(s) {
+    return String(s || '')
+      .replace(/^>\s?/gm, '')
+      .replace(/\*\*(.+?)\*\*/g, '$1')
+      .replace(/`([^`]*)`/g, '$1')
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n');
+  }
+  function squash(s, limit) {
+    return String(s || '').replace(/\s*\n\s*/g, ' ').replace(/\s{2,}/g, ' ').trim().slice(0, limit || 1400);
+  }
+
+  /**
+   * 解析一份讲义文本，返回 {items, chunks}
+   * @param {string} fileName 文件名（用前缀归篇章）
+   * @param {string} content  Markdown 原文
+   * @param {function} makeId 题目 id 生成器（调用方保证全局唯一）
+   */
+  function parseLecture(fileName, content, makeId) {
+    const prefix = String(fileName || '').slice(0, 2);
+    const chap = BY_PREFIX[prefix];
+    const base = String(fileName || '').replace(/\.md$/i, '');
+    const text = mdClean(content);
+    const out = { items: [], chunks: [] };
+    if (!text) return out;
+
+    const headRe = /^(#{1,4})\s+(.+?)\s*$/gm;
+    const heads = [];
+    let hm;
+    while ((hm = headRe.exec(text))) heads.push({ pos: hm.index, title: hm[2].trim() });
+    const sectionAt = pos => { let cur = ''; for (const h of heads) { if (h.pos <= pos) cur = h.title; else break; } return cur; };
+
+    const qRe = /面试官\s*[:：]?\s*/g;
+    const found = [];
+    let qm;
+    while ((qm = qRe.exec(text))) found.push({ start: qm.index, end: qRe.lastIndex });
+
+    if (found.length) {
+      for (let i = 0; i < found.length; i++) {
+        const start = found[i].end;
+        const end = i + 1 < found.length ? found[i + 1].start : text.length;
+        const block = text.slice(start, end);
+        const am = block.match(/候选人\s*[:：]?\s*/);
+        let q, a;
+        if (am && am.index !== undefined) {
+          q = block.slice(0, am.index);
+          a = block.slice(am.index + am[0].length);
+        } else {
+          const lines = block.split('\n').filter(l => l.trim());
+          q = lines[0] || '';
+          a = lines.slice(1).join('\n');
+        }
+        q = squash(q, 200).replace(/^[ 　:：]+|[ 　:：]+$/g, '');
+        a = squash(a, 1400);
+        if (q.length < 6 || a.length < 40) continue;
+        if (/^[【（(]/.test(q) || q.slice(0, 12).indexOf('备注') >= 0 || q.indexOf('则需要先介绍') === 0) continue;
+        if (/】$/.test(q) || /：$/.test(q)) continue;
+        const id = makeId();
+        const sec = sectionAt(start) || (chap ? chap.chName : base);
+        const item = {
+          id, ch: chap ? chap.ch : 'import', chName: chap ? chap.chName : '导入讲义',
+          sec, file: base, q, a,
+        };
+        out.items.push(item);
+        out.chunks.push({ id, ch: item.ch, chName: item.chName, sec, file: base, text: q + ' ' + a });
+      }
+    } else if (heads.length) {
+      // 无问答标记：按标题切段，只做检索语料，不产题
+      for (let i = 0; i < heads.length; i++) {
+        const end = i + 1 < heads.length ? heads[i + 1].pos : text.length;
+        const body = squash(text.slice(heads[i].pos, end).split('\n').slice(1).join('\n'), 900);
+        if (body.length < 80) continue;
+        out.chunks.push({
+          id: makeId(), ch: chap ? chap.ch : 'import', chName: chap ? chap.chName : '导入讲义',
+          sec: heads[i].title, file: base, text: heads[i].title + ' ' + body,
+        });
+      }
+    } else {
+      for (const para of text.split(/\n\s*\n/)) {
+        const body = squash(para, 900);
+        if (body.length < 120) continue;
+        out.chunks.push({
+          id: makeId(), ch: chap ? chap.ch : 'import', chName: chap ? chap.chName : '导入讲义',
+          sec: chap ? chap.chName : base, file: base, text: body,
+        });
+      }
+    }
+    return out;
+  }
+
+  global.MLEngine = { tokenize, grams, buildIndex, retrieve, splitPoints, keyTerms, grade, detectOffTopic, followups, evaluate, setStrictness, ENGINE_PARAMS, parseLecture };
 })(typeof window !== 'undefined' ? window : globalThis);
