@@ -1222,17 +1222,23 @@ function renderReview(r){
   $('#pointCount').textContent = `${r.hitN}/${r.total}`;
   $('#pointCount').hidden = false;
 
-  $('#srcList').innerHTML = r.sources.map(s=>`
+  $('#srcList').innerHTML = r.sources.map(s=>{
+    // 检索返回的是 chunks（只有 text = 题干 + 参考答案），没有独立 q 字段。
+    // 从 items 反查题干；查不到就把 text 第一段当题干，正文不砍字符。
+    const srcItem = ITEMS.find(x => x.id === s.id);
+    const q = srcItem ? srcItem.q : '';
+    const body = srcItem ? s.text.slice(s.text.indexOf(srcItem.q) + srcItem.q.length).trim() : s.text;
+    return `
     <div class="srcitem">
       <div class="srcitem__hd">
         <span class="srcitem__file">${esc((s.file||'').replace(/__/g,'/'))} · ${esc(s.sec)}</span>
         <span class="rel"><span class="rel__bar"><i style="width:${Math.round(s.rel*100)}%"></i></span><span class="rel__v">${s.rel.toFixed(2)}</span></span>
       </div>
       <div class="srcitem__bd">
-        <span class="srcitem__q">${esc(s.q)}</span>
-        ${esc(String(s.text).slice(String(s.q).length).trim().slice(0,700))}
+        ${q ? `<span class="srcitem__q">${esc(q)}</span>` : ''}
+        ${esc(body.slice(0,700))}
         ${s.id===current.id?'<div style="margin-top:10px;font-family:var(--mono);font-size:10px;color:var(--red-ink)">← 本题的讲义片段，要点由此拆出</div>':''}
-      </div></div>`).join('');
+      </div></div>`;}).join('');
   $('#srcCount').textContent = r.sources.length;
   $('#srcCount').hidden = false;
 
